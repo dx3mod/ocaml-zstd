@@ -1,4 +1,0 @@
-(library
- (public_name zstd)
- (modules zstd)
- (libraries bigarray-compat bigstringaf ctypes.stubs integers zstd.stubs))
