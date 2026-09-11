@@ -54,3 +54,21 @@ let decompress_bigstring ?context ?dictionary ~original_size bs =
   in
 
   if len = original_size then buffer else Bstr.sub ~off:0 ~len buffer
+
+module Stream = struct
+  type t = { dstream : Bindings.Dstream.t }
+
+  and decompression_step = {
+    remaining : int;
+    consumed : int;
+    decompressed : int;
+  }
+
+  let create () = { dstream = Bindings.Dstream.create () }
+
+  let decompress_into stream chunk buffer =
+    let remaining, consumed, decompressed =
+      Bindings.decompress_stream stream.dstream chunk buffer
+    in
+    { remaining; consumed; decompressed }
+end

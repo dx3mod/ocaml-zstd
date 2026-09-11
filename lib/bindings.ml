@@ -10,6 +10,12 @@ module Dctx = struct
   external create : unit -> t = "caml_create_zstd_dctx_s"
 end
 
+module Dstream = struct
+  type t = external "DStream"
+
+  external create : unit -> t = "caml_create_zstd_dstream"
+end
+
 module Dict = struct
   type t = string
 end
@@ -76,3 +82,6 @@ end
 
 external compress_stream2 : Cctx.t -> Bstr.t -> Bstr.t -> int -> int * int * int
   = "caml_zstd_compress_stream2"
+
+external decompress_stream : Dstream.t -> Bstr.t -> Bstr.t -> int * int * int
+  = "caml_zstd_decompress_stream"

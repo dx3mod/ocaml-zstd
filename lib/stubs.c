@@ -331,3 +331,73 @@ CAMLprim value caml_zstd_compress_stream2(value context, value src_buf, value ds
 
   CAMLreturn(tup);
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// STREAM DECOMPRESS
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void custom_finalize_zstd_dstream_ops(value);
+
+static struct custom_operations zstd_dstream_ops = {
+    "zstd.DStream",
+    custom_finalize_zstd_dstream_ops,
+    custom_compare_default,
+    custom_hash_default,
+    custom_serialize_default,
+    custom_deserialize_default,
+    custom_compare_ext_default,
+    custom_fixed_length_default};
+
+#define Zstd_dstream_val(v) (*((ZSTD_DStream **)Data_custom_val(v)))
+
+void custom_finalize_zstd_dstream_ops(value dstream)
+{
+  ZSTD_freeDStream(Zstd_dstream_val(dstream));
+}
+
+CAMLprim value caml_create_zstd_dstream(value unit)
+{
+  CAMLparam1(unit);
+  CAMLlocal1(dstream_val);
+
+  ZSTD_DStream *dstream = ZSTD_createDStream();
+
+  if (dstream == NULL)
+    caml_failwith("caml_create_zstd_dstream have NULL");
+
+  dstream_val = caml_alloc_custom(&zstd_dstream_ops, sizeof(ZSTD_DStream *), 0, 1);
+  Zstd_dstream_val(dstream_val) = dstream;
+
+  CAMLreturn(dstream_val);
+}
+
+CAMLprim value caml_zstd_decompress_stream(value dstream, value src_buf, value dst_buf)
+{
+  CAMLparam3(dstream, src_buf, dst_buf);
+  CAMLlocal1(tup);
+
+  ZSTD_inBuffer input = {
+      .src = Caml_ba_data_val(src_buf),
+      .size = Caml_ba_array_val(src_buf)->dim[0],
+      .pos = 0};
+
+  ZSTD_outBuffer output = {
+      .dst = Caml_ba_data_val(dst_buf),
+      .size = Caml_ba_array_val(dst_buf)->dim[0],
+      .pos = 0};
+
+  size_t remaining = ZSTD_decompressStream(Zstd_dstream_val(dstream), &output, &input);
+
+  if (ZSTD_isError(remaining))
+  {
+    caml_failwith(ZSTD_getErrorName(remaining));
+  }
+
+  tup = caml_alloc_tuple(3);
+
+  Store_field(tup, 0, Val_int(remaining));
+  Store_field(tup, 1, Val_int(input.pos));
+  Store_field(tup, 2, Val_int(output.pos));
+
+  CAMLreturn(tup);
+}
