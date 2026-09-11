@@ -52,6 +52,43 @@ CAMLprim value caml_create_zstd_cctx_s(value unit)
 
 ////////////////////////////////////////////////////////////////////////
 
+void custom_finalize_zstd_dctx_ops(value);
+
+static struct custom_operations zstd_dctx_ops = {
+    "zstd.DCtx_s",
+    custom_finalize_zstd_dctx_ops,
+    custom_compare_default,
+    custom_hash_default,
+    custom_serialize_default,
+    custom_deserialize_default,
+    custom_compare_ext_default,
+    custom_fixed_length_default};
+
+#define Zstd_dctx_val(v) (*((ZSTD_DCtx **)Data_custom_val(v)))
+
+void custom_finalize_zstd_dctx_ops(value dctx)
+{
+  ZSTD_freeDCtx(Zstd_dctx_val(dctx));
+}
+
+CAMLprim value caml_create_zstd_dctx_s(value unit)
+{
+  CAMLparam1(unit);
+  CAMLlocal1(dctx_val);
+
+  ZSTD_DCtx *dctx = ZSTD_createDCtx();
+
+  if (dctx == NULL)
+    caml_failwith("create_zstd_cctx_s have NULL");
+
+  dctx_val = caml_alloc_custom(&zstd_dctx_ops, sizeof(ZSTD_DCtx *), 0, 1);
+  Zstd_dctx_val(dctx_val) = dctx;
+
+  CAMLreturn(dctx_val);
+}
+
+////////////////////////////////////////////////////////////////////////
+
 CAMLprim value caml_zstd_version(value unit)
 {
   return Val_int(ZSTD_VERSION_NUMBER);
@@ -64,7 +101,7 @@ CAMLprim value caml_zstd_compress_bound(value src_size)
 
 ////////////////////////////////////////////////////////////////////////
 
-CAMLprim value caml_zstd_compress_bigstring_using_cctx(value cctx, value dict, value src_buf, value src_len, value dst_buf, value dst_len, value level)
+CAMLprim value caml_zstd_compress_bigstring(value cctx, value dict, value src_buf, value src_len, value dst_buf, value dst_len, value level)
 {
   CAMLparam5(cctx, dict, src_buf, src_len, dst_buf);
   CAMLxparam2(dst_len, level);
@@ -91,18 +128,18 @@ CAMLprim value caml_zstd_compress_bigstring_using_cctx(value cctx, value dict, v
   CAMLreturn(Val_int(result));
 }
 
-CAMLprim value caml_zstd_compress_bigstring_using_cctx_bytecode(value *argv, int argn)
+CAMLprim value caml_zstd_compress_bigstring_bytecode(value *argv, int argn)
 {
-  return caml_zstd_compress_bigstring_using_cctx(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
+  return caml_zstd_compress_bigstring(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
 }
 
-CAMLprim value caml_zstd_compress_string_using_cctx(value cctx, value dict, value src_str, value dst_bytes, value level)
+CAMLprim value caml_zstd_compress_string(value cctx, value dict, value src_str, value dst_bytes, value level)
 {
   CAMLparam5(cctx, dict, src_str, dst_bytes, level);
 
   int result;
 
-  caml_enter_blocking_section();
+  // caml_enter_blocking_section();
   if (Is_some(dict))
     result = ZSTD_compress_usingDict(Zstd_cctx_val(cctx),
                                      Bytes_val(dst_bytes), caml_string_length(dst_bytes), String_val(src_str),
@@ -112,7 +149,7 @@ CAMLprim value caml_zstd_compress_string_using_cctx(value cctx, value dict, valu
     result = ZSTD_compressCCtx(Zstd_cctx_val(cctx),
                                Bytes_val(dst_bytes), caml_string_length(dst_bytes), String_val(src_str),
                                caml_string_length(src_str), Int_val(level));
-  caml_leave_blocking_section();
+  // caml_leave_blocking_section();
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
@@ -122,22 +159,21 @@ CAMLprim value caml_zstd_compress_string_using_cctx(value cctx, value dict, valu
 
 ////////////////////////////////////////////////////////////////////////
 
-CAMLprim value caml_zstd_decompress_string(value dict, value bytes, value string)
+CAMLprim value caml_zstd_decompress_string(value dctx, value dict, value bytes, value string)
 {
-  CAMLparam3(dict, bytes, string);
+  CAMLparam4(dctx, dict, bytes, string);
 
   // NOTE: it's blocking the OCaml runtime
   int result;
 
   if (Is_some(dict))
-    result = ZSTD_decompress(
-        Bytes_val(bytes), caml_string_length(bytes), String_val(string),
-        caml_string_length(string));
-
+    result = ZSTD_decompress_usingDict(Zstd_dctx_val(dctx),
+                                       Bytes_val(bytes), caml_string_length(bytes), String_val(string),
+                                       caml_string_length(string), String_val(Some_val(dict)), caml_string_length(Some_val(dict)));
   else
-    result = ZSTD_decompress(
-        Bytes_val(bytes), caml_string_length(bytes), String_val(string),
-        caml_string_length(string));
+    result = ZSTD_decompressDCtx(Zstd_dctx_val(dctx),
+                                 Bytes_val(bytes), caml_string_length(bytes), String_val(string),
+                                 caml_string_length(string));
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
@@ -145,18 +181,33 @@ CAMLprim value caml_zstd_decompress_string(value dict, value bytes, value string
   CAMLreturn(Val_int(result));
 }
 
-CAMLprim value caml_zstd_decompress_bigstring(value dict, value src_buf, value src_len, value dst_buf, value dst_len)
+CAMLprim value caml_zstd_decompress_bigstring(value dctx, value dict, value src_buf, value src_len, value dst_buf, value dst_len)
 {
-  CAMLparam5(dict, src_buf, src_len, dst_buf, dst_len);
+  CAMLparam5(dctx, dict, src_buf, src_len, dst_buf);
+  CAMLxparam1(dst_len);
 
-  caml_enter_blocking_section();
-  int result = ZSTD_decompress(
-      Caml_ba_data_val(dst_buf), Int_val(dst_len),
-      Caml_ba_data_val(src_buf), Int_val(src_len));
-  caml_leave_blocking_section();
+  int result;
+
+  // caml_enter_blocking_section();
+
+  if (Is_some(dict))
+    result = ZSTD_decompress_usingDict(Zstd_dctx_val(dctx),
+                                       Caml_ba_data_val(dst_buf), Int_val(dst_len),
+                                       Caml_ba_data_val(src_buf), Int_val(src_len),
+                                       String_val(Some_val(dict)), caml_string_length(Some_val(dict)));
+  else
+    result = ZSTD_decompressDCtx(Zstd_dctx_val(dctx),
+                                 Caml_ba_data_val(dst_buf), Int_val(dst_len),
+                                 Caml_ba_data_val(src_buf), Int_val(src_len));
+  // caml_leave_blocking_section();
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
 
   CAMLreturn(Val_int(result));
+}
+
+CAMLprim value caml_zstd_decompress_bigstring_bytecode(value *argv, int argn)
+{
+  return caml_zstd_decompress_bigstring(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }

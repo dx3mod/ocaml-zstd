@@ -7,10 +7,26 @@ A thin OCaml bindings to [Zstandard] compression library.
 You can install the `zstd` library using the [OPAM] package manager or any other method you prefer.
 If you are using [Dune], please add the `zstd` library to your dependencies.
 
-A small code example:
+### In use
+
+The library offers a small collection of abstractions for compressing and decompressing data in sequential and streaming formats. The names of these abstractions are `Zstd.Compressor` and `Zstd.Decompressor`.
+
+First, you should create a context to compress and decompress your blobs. This is necessary to avoid re-allocation.
+
 ```ocaml
-let zctx = Zstd.Context.create () in 
-Zstd.Decompressor.decompress_string zctx ~original_size "..."
+let decompressor = Zstd.Decompressor.create ()
+(* or *)
+let compressor = Zstd.Compressor.create () 
+```
+
+Next, you can use all the available functions.
+
+```ocaml
+let source = {| Contrary .... section 1.10.32. |} in 
+
+Zstd.Compressor.compress_string compressor ~level:0 source 
+|> Zstd.Decompressor.decompress_string 
+    ~original_size:String.(length source) decompressor
 ```
 
 ## License

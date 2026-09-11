@@ -5,7 +5,7 @@ description: """
 Zstd, short for Zstandard, is a fast lossless compression algorithm,
 targeting real-time compression scenarios at zlib-level compression ratio.
 See http://zstd.net/ for more info."""
-maintainer: ["ygrek <ygrek@autistici.org>"]
+maintainer: ["ygrek <ygrek@autistici.org>" "Mikhail Lopatin <dx3mod@bk.ru>"]
 authors: ["ygrek <ygrek@autistici.org>"]
 license: "BSD-3-Clause"
 tags: ["clib:zstd"]
