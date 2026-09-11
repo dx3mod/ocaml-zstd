@@ -296,3 +296,38 @@ CAMLprim value caml_zstd_decompress_bigstring_with_context_and_dictionary_byteco
 {
   return caml_zstd_decompress_bigstring_with_context_and_dictionary(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// STREAM COMPRESS
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+CAMLprim value caml_zstd_compress_stream2(value context, value src_buf, value dst_buf, value directive)
+{
+  CAMLparam4(context, src_buf, dst_buf, directive);
+  CAMLlocal1(tup);
+
+  ZSTD_inBuffer input = {
+      .src = Caml_ba_data_val(src_buf),
+      .size = Caml_ba_array_val(src_buf)->dim[0],
+      .pos = 0};
+
+  ZSTD_outBuffer output = {
+      .dst = Caml_ba_data_val(dst_buf),
+      .size = Caml_ba_array_val(dst_buf)->dim[0],
+      .pos = 0};
+
+  mlsize_t remaining = ZSTD_compressStream2(Zstd_cctx_val(context), &output, &input, Int_val(directive));
+
+  if (ZSTD_isError(remaining))
+  {
+    caml_failwith(ZSTD_getErrorName(remaining));
+  }
+
+  tup = caml_alloc_tuple(3);
+
+  Store_field(tup, 0, Val_int(remaining));
+  Store_field(tup, 1, Val_int(input.pos));
+  Store_field(tup, 2, Val_int(output.pos));
+
+  CAMLreturn(tup);
+}

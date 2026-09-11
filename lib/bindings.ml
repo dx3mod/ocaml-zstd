@@ -67,3 +67,12 @@ external decompress_string_with_context :
 external decompress_string_with_context_and_dictionary :
   Dctx.t -> Dict.t -> string -> bytes -> int -> int
   = "caml_zstd_decompress_string_with_context_and_dictionary"
+
+module Directive = struct
+  let continue = 0
+  and flush = 1
+  and eend = 2
+end
+
+external compress_stream2 : Cctx.t -> Bstr.t -> Bstr.t -> int -> int * int * int
+  = "caml_zstd_compress_stream2"
