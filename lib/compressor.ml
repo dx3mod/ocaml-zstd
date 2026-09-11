@@ -1,24 +1,77 @@
-type t = { cctx : Bindings.Cctx.t }
+module Context = struct
+  type t = { cctx : Bindings.Cctx.t }
 
-let create () = { cctx = Bindings.Cctx.create () }
+  let create () = { cctx = Bindings.Cctx.create () }
+end
 
-let compress_bigstring c ?dictionary ~level bs =
+let compress_bigstring ?context ?dictionary ~level bs =
   let compressed_capacity = Bindings.Misc.compress_bound @@ Bstr.length bs in
   let buffer = Bstr.create compressed_capacity in
 
   let len =
-    Bindings.compress_bigstring_cctx c.cctx dictionary buffer
-      Bstr.(length buffer)
-      bs
-      Bstr.(length bs)
-      level
+    match (context, dictionary) with
+    | None, None ->
+        Bindings.compress_bigstring bs
+          Bstr.(length bs)
+          buffer
+          Bstr.(length buffer)
+          level
+    | Some context, None ->
+        Bindings.compress_bigstring_with_context context.Context.cctx bs
+          Bstr.(length bs)
+          buffer
+          Bstr.(length buffer)
+          level
+    | Some context, Some dictionary ->
+        Bindings.compress_bigstring_with_context_and_dictionary
+          context.Context.cctx dictionary bs
+          Bstr.(length bs)
+          buffer
+          Bstr.(length buffer)
+          level
+    | None, Some dictionary ->
+        Bindings.compress_bigstring_with_context_and_dictionary
+          Context.(create ()).cctx dictionary bs
+          Bstr.(length bs)
+          buffer
+          Bstr.(length buffer)
+          level
   in
 
   Bstr.sub ~off:0 ~len buffer
 
-let compress_string c ?dictionary ~level str =
-  let compressed_capacity = Bindings.Misc.compress_bound @@ String.length str in
+let compress_string ?context ?dictionary ~level s =
+  let compressed_capacity = Bindings.Misc.compress_bound @@ String.length s in
   let bytes = Bytes.create compressed_capacity in
 
-  Bindings.compress_string_cctx c.cctx dictionary str bytes level
-  |> Bytes.sub_string bytes 0
+  let length =
+    match (context, dictionary) with
+    | None, None ->
+        Bindings.compress_string s
+          String.(length s)
+          bytes
+          Bytes.(length bytes)
+          level
+    | Some context, None ->
+        Bindings.compress_string_with_context context.Context.cctx s
+          String.(length s)
+          bytes
+          Bytes.(length bytes)
+          level
+    | Some context, Some dictionary ->
+        Bindings.compress_string_with_context_and_dictionary
+          context.Context.cctx dictionary s
+          String.(length s)
+          bytes
+          Bytes.(length bytes)
+          level
+    | None, Some dictionary ->
+        Bindings.compress_string_with_context_and_dictionary
+          Context.(create ()).cctx dictionary s
+          String.(length s)
+          bytes
+          Bytes.(length bytes)
+          level
+  in
+
+  Bytes.sub_string bytes 0 length

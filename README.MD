@@ -11,7 +11,7 @@ If you are using [Dune], please add the `zstd` library to your dependencies.
 
 The library offers a small collection of abstractions for compressing and decompressing data in sequential and streaming formats. The names of these abstractions are `Zstd.Compressor` and `Zstd.Decompressor`.
 
-First, you should create a context to compress and decompress your blobs. This is necessary to avoid re-allocation.
+<!-- First, you should create a context to compress and decompress your blobs. This is necessary to avoid re-allocation.
 
 ```ocaml
 let decompressor = Zstd.Decompressor.create ()
@@ -19,14 +19,15 @@ let decompressor = Zstd.Decompressor.create ()
 let compressor = Zstd.Compressor.create () 
 ```
 
-Next, you can use all the available functions.
+(* Next, you can use all the available functions. *)
+ -->
 
 ```ocaml
 let source = {| Contrary .... section 1.10.32. |} in 
 
-Zstd.Compressor.compress_string compressor ~level:0 source 
-|> Zstd.Decompressor.decompress_string 
-    ~original_size:String.(length source) decompressor
+Zstd.Compressor.compress_string ~level:0 source 
+|> Zstd.Decompressor.decompress_string ~original_size:String.(length source)
+(* - : string = " Contrary .... section 1.10.32. " *)
 ```
 
 ## License

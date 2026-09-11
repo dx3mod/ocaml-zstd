@@ -10,23 +10,60 @@ module Dctx = struct
   external create : unit -> t = "caml_create_zstd_dctx_s"
 end
 
+module Dict = struct
+  type t = string
+end
+
 module Misc = struct
   external version : unit -> int = "caml_zstd_version"
   external compress_bound : int -> int = "caml_zstd_compress_bound"
 end
 
-external compress_bigstring_cctx :
-  Cctx.t -> string option -> Bstr.t -> int -> Bstr.t -> int -> int -> int
-  = "caml_zstd_compress_bigstring_bytecode" "caml_zstd_compress_bigstring"
+external compress_bigstring : Bstr.t -> int -> Bstr.t -> int -> int -> int
+  = "caml_zstd_compress_bigstring"
 
-external compress_string_cctx :
-  Cctx.t -> string option -> string -> bytes -> int -> int
+external compress_bigstring_with_context :
+  Cctx.t -> Bstr.t -> int -> Bstr.t -> int -> int -> int
+  = "caml_zstd_compress_bigstring_with_context_bytecode"
+    "caml_zstd_compress_bigstring_with_context"
+
+external compress_bigstring_with_context_and_dictionary :
+  Cctx.t -> Dict.t -> Bstr.t -> int -> Bstr.t -> int -> int -> int
+  = "caml_zstd_compress_bigstring_with_context_and_dictionary_bytecode"
+    "caml_zstd_compress_bigstring_with_context_and_dictionary"
+
+external compress_string : string -> int -> bytes -> int -> int -> int
   = "caml_zstd_compress_string"
 
-external decompress_string_dctx :
-  Dctx.t -> string option -> bytes -> string -> int
+external compress_string_with_context :
+  Cctx.t -> string -> int -> bytes -> int -> int -> int
+  = "caml_zstd_compress_string_with_context_bytecode"
+    "caml_zstd_compress_string_with_context"
+
+external compress_string_with_context_and_dictionary :
+  Cctx.t -> Dict.t -> string -> int -> bytes -> int -> int -> int
+  = "caml_zstd_compress_string_with_context_and_dictionary_bytecode"
+    "caml_zstd_compress_string_with_context_and_dictionary"
+
+external decompress_bigstring : Bstr.t -> Bstr.t -> int -> int -> int
+  = "caml_zstd_decompress_bigstring"
+
+external decompress_bigstring_with_context :
+  Dctx.t -> Bstr.t -> Bstr.t -> int -> int -> int
+  = "caml_zstd_decompress_bigstring_with_context"
+
+external decompress_bigstring_with_context_and_dictionary :
+  Dctx.t -> Dict.t -> Bstr.t -> Bstr.t -> int -> int -> int
+  = "caml_zstd_decompress_bigstring_with_context_and_dictionary_bytecode"
+    "caml_zstd_decompress_bigstring_with_context_and_dictionary"
+
+external decompress_string : string -> bytes -> int -> int
   = "caml_zstd_decompress_string"
 
-external decompress_bigstring :
-  Dctx.t -> string option -> Bstr.t -> int -> Bstr.t -> int -> int
-  = "caml_zstd_decompress_bigstring_bytecode" "caml_zstd_decompress_bigstring"
+external decompress_string_with_context :
+  Dctx.t -> string -> bytes -> int -> int
+  = "caml_zstd_decompress_string_with_context"
+
+external decompress_string_with_context_and_dictionary :
+  Dctx.t -> Dict.t -> string -> bytes -> int -> int
+  = "caml_zstd_decompress_string_with_context_and_dictionary"
