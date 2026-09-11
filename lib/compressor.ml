@@ -52,27 +52,30 @@ let compress_string ?context ?dictionary ~level s =
   Bytes.sub_string bytes 0 length
 
 module Stream = struct
-  type t = { context : Context.t; buffer : Bstr.t }
-  and directive = Continue | Flush | End
-  and compression_state = { remaining : int; compressed : int; written : int }
+  type t = { context : Context.t }
+  and step = { remaining : int; compressed : int; written : int }
 
-  let create ?(buffer_size = 4029) () =
-    { context = Context.create (); buffer = Bstr.create buffer_size }
+  let create () = { context = Context.create () }
+  and of_context context = { context }
 
-  let make ~buffer ?context () =
+  and make ?context () =
     {
-      buffer;
       context =
         (match context with
         | None -> Context.create ()
         | Some context -> context);
     }
 
-  let compress stream chunk directive =
-    let directive = Obj.magic (directive : directive) in
+  let compress ~into:buffer stream chunk directive =
+    let directive =
+      match directive with
+      | `Continue -> Bindings.Directive.continue
+      | `Flush -> Bindings.Directive.eend
+      | `End -> Bindings.Directive.eend
+    in
+
     let remaining, compressed, written =
-      Bindings.(
-        compress_stream2 stream.context.cctx chunk stream.buffer directive)
+      Bindings.(compress_stream2 stream.context.cctx chunk buffer directive)
     in
     { remaining; compressed; written }
 end
