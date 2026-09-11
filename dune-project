@@ -11,7 +11,7 @@
 
 (authors "ygrek <ygrek@autistici.org>")
 
-(maintainers "ygrek <ygrek@autistici.org>")
+(maintainers "ygrek <ygrek@autistici.org>" "Mikhail Lopatin <dx3mod@bk.ru>")
 
 (license BSD-3-Clause)
 
@@ -24,5 +24,6 @@
   (ocaml
    (>= 4.14.0))
   bstr
+  conf-zstd
   (alcotest :with-test))
  (tags (clib:zstd)))
