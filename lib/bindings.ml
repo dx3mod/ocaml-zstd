@@ -1,17 +1,17 @@
 module Cctx = struct
-  type t = external "ZSTD_CCtx"
+  type t
 
   external create : unit -> t = "caml_create_zstd_cctx_s"
 end
 
 module Dctx = struct
-  type t = external "ZSTD_DCtx"
+  type t
 
   external create : unit -> t = "caml_create_zstd_dctx_s"
 end
 
 module Dstream = struct
-  type t = external "DStream"
+  type t
 
   external create : unit -> t = "caml_create_zstd_dstream"
 end
