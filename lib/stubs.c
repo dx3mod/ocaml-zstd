@@ -316,7 +316,7 @@ CAMLprim value caml_zstd_compress_stream2(value context, value src_buf, value ds
       .size = Caml_ba_array_val(dst_buf)->dim[0],
       .pos = 0};
 
-  mlsize_t remaining = ZSTD_compressStream2(Zstd_cctx_val(context), &output, &input, Int_val(directive));
+  size_t remaining = ZSTD_compressStream2(Zstd_cctx_val(context), &output, &input, Int_val(directive));
 
   if (ZSTD_isError(remaining))
   {
