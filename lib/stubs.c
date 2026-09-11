@@ -96,7 +96,8 @@ CAMLprim value caml_zstd_version(value unit)
 
 CAMLprim value caml_zstd_compress_bound(value src_size)
 {
-  return Val_int(ZSTD_COMPRESSBOUND(Int_val(src_size)));
+  CAMLparam1(src_size);
+  CAMLreturn(Val_int(ZSTD_COMPRESSBOUND(Int_val(src_size))));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -161,7 +162,7 @@ CAMLprim value caml_zstd_compress_bigstring_with_context_and_dictionary_bytecode
 
 CAMLprim value caml_zstd_compress_string(value src_str, value src_len, value dst_bytes, value dst_len, value level)
 {
-  CAMLparam5(src_len, src_len, dst_bytes, dst_len, level);
+  CAMLparam5(src_str, src_len, dst_bytes, dst_len, level);
 
   int result = ZSTD_compress(
       Bytes_val(dst_bytes), Int_val(dst_len), String_val(src_str),
@@ -175,7 +176,7 @@ CAMLprim value caml_zstd_compress_string(value src_str, value src_len, value dst
 
 CAMLprim value caml_zstd_compress_string_with_context(value context, value src_str, value src_len, value dst_bytes, value dst_len, value level)
 {
-  CAMLparam5(src_len, src_len, dst_bytes, dst_len, level);
+  CAMLparam5(src_str, src_len, dst_bytes, dst_len, level);
   CAMLxparam1(context);
 
   int result = ZSTD_compressCCtx(Zstd_cctx_val(context),
@@ -194,7 +195,7 @@ CAMLprim value caml_zstd_compress_string_with_context_bytecode(value *argv, int 
 
 CAMLprim value caml_zstd_compress_string_with_context_and_dictionary(value context, value dictionary, value src_str, value src_len, value dst_bytes, value dst_len, value level)
 {
-  CAMLparam5(src_len, src_len, dst_bytes, dst_len, level);
+  CAMLparam5(src_str, src_len, dst_bytes, dst_len, level);
   CAMLxparam2(context, dictionary);
 
   int result = ZSTD_compress_usingDict(Zstd_cctx_val(context),
