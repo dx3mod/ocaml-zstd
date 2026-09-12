@@ -302,20 +302,31 @@ CAMLprim value caml_zstd_decompress_bigstring_with_context_and_dictionary_byteco
 // STREAM COMPRESS
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CAMLprim value caml_zstd_compress_stream2(value context, value src_buf, value dst_buf, value directive)
+static value create_step_value(int remaining, int input_position, int output_position)
 {
-  CAMLparam4(context, src_buf, dst_buf, directive);
+  value tup = caml_alloc_tuple(3);
+
+  Store_field(tup, 0, Val_int(remaining));
+  Store_field(tup, 1, Val_int(input_position));
+  Store_field(tup, 2, Val_int(output_position));
+
+  return tup;
+}
+
+CAMLprim value caml_zstd_compress_stream2(value context, value in_buffer, value out_buffer, value directive)
+{
+  CAMLparam4(context, in_buffer, out_buffer, directive);
   CAMLlocal1(tup);
 
   ZSTD_inBuffer input = {
-      .src = Caml_ba_data_val(src_buf),
-      .size = Caml_ba_array_val(src_buf)->dim[0],
-      .pos = 0};
+      .src = Caml_ba_data_val(Field(in_buffer, 0)),
+      .size = Int_val(Field(in_buffer, 2)),
+      .pos = Int_val(Field(in_buffer, 1))};
 
   ZSTD_outBuffer output = {
-      .dst = Caml_ba_data_val(dst_buf),
-      .size = Caml_ba_array_val(dst_buf)->dim[0],
-      .pos = 0};
+      .dst = Caml_ba_data_val(Field(out_buffer, 0)),
+      .size = Int_val(Field(out_buffer, 2)),
+      .pos = Int_val(Field(out_buffer, 1))};
 
   size_t remaining = ZSTD_compressStream2(Zstd_cctx_val(context), &output, &input, Int_val(directive));
 
@@ -324,11 +335,10 @@ CAMLprim value caml_zstd_compress_stream2(value context, value src_buf, value ds
     caml_failwith(ZSTD_getErrorName(remaining));
   }
 
-  tup = caml_alloc_tuple(3);
+  Store_field(in_buffer, 1, Val_int(input.pos));
+  Store_field(out_buffer, 1, Val_int(output.pos));
 
-  Store_field(tup, 0, Val_int(remaining));
-  Store_field(tup, 1, Val_int(input.pos));
-  Store_field(tup, 2, Val_int(output.pos));
+  tup = create_step_value(remaining, input.pos, output.pos);
 
   CAMLreturn(tup);
 }
@@ -372,20 +382,20 @@ CAMLprim value caml_create_zstd_dstream(value unit)
   CAMLreturn(dstream_val);
 }
 
-CAMLprim value caml_zstd_decompress_stream(value dstream, value src_buf, value dst_buf)
+CAMLprim value caml_zstd_decompress_stream(value dstream, value in_buffer, value out_buffer)
 {
-  CAMLparam3(dstream, src_buf, dst_buf);
+  CAMLparam3(dstream, in_buffer, out_buffer);
   CAMLlocal1(tup);
 
   ZSTD_inBuffer input = {
-      .src = Caml_ba_data_val(src_buf),
-      .size = Caml_ba_array_val(src_buf)->dim[0],
-      .pos = 0};
+      .src = Caml_ba_data_val(Field(in_buffer, 0)),
+      .size = Int_val(Field(in_buffer, 2)),
+      .pos = Int_val(Field(in_buffer, 1))};
 
   ZSTD_outBuffer output = {
-      .dst = Caml_ba_data_val(dst_buf),
-      .size = Caml_ba_array_val(dst_buf)->dim[0],
-      .pos = 0};
+      .dst = Caml_ba_data_val(Field(out_buffer, 0)),
+      .size = Int_val(Field(out_buffer, 2)),
+      .pos = Int_val(Field(out_buffer, 1))};
 
   size_t remaining = ZSTD_decompressStream(Zstd_dstream_val(dstream), &output, &input);
 
@@ -394,11 +404,9 @@ CAMLprim value caml_zstd_decompress_stream(value dstream, value src_buf, value d
     caml_failwith(ZSTD_getErrorName(remaining));
   }
 
-  tup = caml_alloc_tuple(3);
+  Store_field(in_buffer, 1, Val_int(input.pos));
+  Store_field(out_buffer, 1, Val_int(output.pos));
 
-  Store_field(tup, 0, Val_int(remaining));
-  Store_field(tup, 1, Val_int(input.pos));
-  Store_field(tup, 2, Val_int(output.pos));
-
+  tup = create_step_value(remaining, input.pos, output.pos);
   CAMLreturn(tup);
 }

@@ -80,8 +80,10 @@ module Directive = struct
   and eend = 2
 end
 
-external compress_stream2 : Cctx.t -> Bstr.t -> Bstr.t -> int -> int * int * int
+external compress_stream2 :
+  Cctx.t -> Io_buffer.t -> Io_buffer.t -> int -> int * int * int
   = "caml_zstd_compress_stream2"
 
-external decompress_stream : Dstream.t -> Bstr.t -> Bstr.t -> int * int * int
+external decompress_stream :
+  Dstream.t -> Io_buffer.t -> Io_buffer.t -> int * int * int
   = "caml_zstd_decompress_stream"

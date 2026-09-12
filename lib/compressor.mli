@@ -20,12 +20,14 @@ val compress_string :
 
 module Stream : sig
   type t
-  and step = { remaining : int; compressed : int; written : int }
 
   val create : unit -> t
   val of_context : Context.t -> t
-  val make : ?context:Context.t -> unit -> t
 
   val compress :
-    into:Bstr.t -> t -> Bstr.t -> [ `Continue | `Flush | `End ] -> step
+    in_buffer:Io_buffer.t ->
+    out_buffer:Io_buffer.t ->
+    t ->
+    [ `Continue | `Flush | `End ] ->
+    (remaining:int * compressed:int * written:int)
 end

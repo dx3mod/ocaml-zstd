@@ -22,20 +22,18 @@ Zstd.Compressor.compress_string ~level:0 source
 You may also want to consider using the streaming API. For these exists `Decompressor.Stream` and `Compressor.Stream` modules.
 
 ```ocaml
-let stream = Zstd.Decompressor.Stream.create () in 
-Zstd.Decompressor.Stream.decompress ~into:output_buffer stream chunk 
-```
+let stream = Zstd.Decompressor.Stream.create ()
 
-```ocaml
-let compression_stream = Zstd.Compressor.Stream.create () in 
-Zstd.Compression.Stream.compress ~into:output_buffer compression_stream chunk `Flush
+and in_buffer = Zstd.Io_buffer.make compressed_buffer
+and out_buffer = Zstd.Io_buffer.make uncompressed_buffer in
+
+Zstd.Decompressor.Stream.decompress ~in_buffer ~out_buffer stream
 ```
 
 ## License
 
 The project is licensed under [the BSD3 License](./LICENSE), which allows for all permissions.
 Just use it and enjoy yourself without fear. We are always open to pull requests!
-
 
 [Zstandard]: https://github.com/facebook/zstd
 

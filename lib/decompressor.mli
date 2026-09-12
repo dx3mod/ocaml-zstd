@@ -36,8 +36,12 @@ val decompress_bigstring :
 
 module Stream : sig
   type t
-  and step = { remaining : int; consumed : int; decompressed : int }
 
   val create : unit -> t
-  val decompress : into:Bstr.t -> t -> Bstr.t -> step
+
+  val decompress :
+    in_buffer:Io_buffer.t ->
+    out_buffer:Io_buffer.t ->
+    t ->
+    (remaining:int * consumed:int * decompressed:int)
 end
