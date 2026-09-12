@@ -19,7 +19,7 @@ Zstd.Compressor.compress_string ~level:0 source
 (* - : string = " Contrary .... section 1.10.32. " *)
 ```
 
-You may also want to consider using the streaming API. For these exists `Decompressor.Stream` and `Compressor.Stream` modules.
+You may also want to consider using the streaming API. For this, there are the `Decompressor.Stream` and `Compressor.Stream` modules.
 
 ```ocaml
 let stream = Zstd.Decompressor.Stream.create ()
