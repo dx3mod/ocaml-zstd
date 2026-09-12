@@ -1,1 +1,1 @@
-type t = string
+type t = Bstr.t

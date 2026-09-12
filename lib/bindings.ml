@@ -12,7 +12,7 @@ type decompression_stream = external "ZSTD_DStream"
 external create_decompression_stream : unit -> decompression_stream
   = "caml_create_zstd_dstream"
 
-type dictionary = string
+type dictionary = Bstr.t
 
 external version : unit -> int = "caml_zstd_version"
 external compress_bound : int -> int = "caml_zstd_compress_bound"

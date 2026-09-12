@@ -145,7 +145,7 @@ CAMLprim value caml_zstd_compress_bigstring_with_context_and_dictionary(value co
 
   int result = ZSTD_compress_usingDict(Zstd_cctx_val(context),
                                        Caml_ba_data_val(dst_buf), Int_val(dst_len), Caml_ba_data_val(src_buf),
-                                       Int_val(src_len), String_val(dictionary), caml_string_length(dictionary), Int_val(level));
+                                       Int_val(src_len), Caml_ba_data_val(dictionary), Caml_ba_array_val(dictionary)->dim[0], Int_val(level));
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
@@ -200,7 +200,7 @@ CAMLprim value caml_zstd_compress_string_with_context_and_dictionary(value conte
 
   int result = ZSTD_compress_usingDict(Zstd_cctx_val(context),
                                        Bytes_val(dst_bytes), Int_val(dst_len), String_val(src_str),
-                                       Int_val(src_len), String_val(dictionary), caml_string_length(dictionary), Int_val(level));
+                                       Int_val(src_len), Caml_ba_data_val(dictionary), Caml_ba_array_val(dictionary)->dim[0], Int_val(level));
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
@@ -286,7 +286,7 @@ CAMLprim value caml_zstd_decompress_bigstring_with_context_and_dictionary(value 
   int result = ZSTD_decompress_usingDict(
       Zstd_dctx_val(context),
       Caml_ba_data_val(dst_buf), Int_val(dst_cap), Caml_ba_data_val(src_buf),
-      Int_val(original_size), String_val(dictionary), caml_string_length(dictionary));
+      Int_val(original_size), Caml_ba_data_val(dictionary), Caml_ba_array_val(dictionary)->dim[0]);
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
