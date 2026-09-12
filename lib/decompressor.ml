@@ -1,7 +1,7 @@
 module Context = struct
-  type t = { dctx : Bindings.Dctx.t }
+  type t = { dctx : Bindings.decompression_context }
 
-  let create () = { dctx = Bindings.Dctx.create () }
+  let create () = { dctx = Bindings.create_decompression_context () }
 end
 
 let decompress_string_into_bytes ?context ?dictionary ~original_size string
@@ -56,9 +56,9 @@ let decompress_bigstring ?context ?dictionary ~original_size bs =
   if len = original_size then buffer else Bstr.sub ~off:0 ~len buffer
 
 module Stream = struct
-  type t = { dstream : Bindings.Dstream.t }
+  type t = { dstream : Bindings.decompression_stream }
 
-  let create () = { dstream = Bindings.Dstream.create () }
+  let create () = { dstream = Bindings.create_decompression_stream () }
 
   let decompress ~in_buffer ~out_buffer stream =
     let remaining, consumed, decompressed =

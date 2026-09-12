@@ -1,6 +1,6 @@
 # zstd
 
-A thin OCaml bindings to [Zstandard] compression library. 
+A thin and modern OCaml bindings to [Zstandard] compression library. 
 
 ## Quick start
 

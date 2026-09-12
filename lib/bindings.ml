@@ -1,40 +1,39 @@
-module Cctx = struct
-  type t
+type compression_context = external "ZSTD_CCtx"
+and decompression_context = external "ZSTD_DCtx"
 
-  external create : unit -> t = "caml_create_zstd_cctx_s"
-end
+external create_compression_context : unit -> compression_context
+  = "caml_create_zstd_cctx_s"
 
-module Dctx = struct
-  type t
+external create_decompression_context : unit -> decompression_context
+  = "caml_create_zstd_dctx_s"
 
-  external create : unit -> t = "caml_create_zstd_dctx_s"
-end
+type decompression_stream = external "ZSTD_DStream"
 
-module Dstream = struct
-  type t
+external create_decompression_stream : unit -> decompression_stream
+  = "caml_create_zstd_dstream"
 
-  external create : unit -> t = "caml_create_zstd_dstream"
-end
+type dictionary = string
 
-module Dict = struct
-  type t = string
-end
-
-module Misc = struct
-  external version : unit -> int = "caml_zstd_version"
-  external compress_bound : int -> int = "caml_zstd_compress_bound"
-end
+external version : unit -> int = "caml_zstd_version"
+external compress_bound : int -> int = "caml_zstd_compress_bound"
 
 external compress_bigstring : Bstr.t -> int -> Bstr.t -> int -> int -> int
   = "caml_zstd_compress_bigstring"
 
 external compress_bigstring_with_context :
-  Cctx.t -> Bstr.t -> int -> Bstr.t -> int -> int -> int
+  compression_context -> Bstr.t -> int -> Bstr.t -> int -> int -> int
   = "caml_zstd_compress_bigstring_with_context_bytecode"
     "caml_zstd_compress_bigstring_with_context"
 
 external compress_bigstring_with_context_and_dictionary :
-  Cctx.t -> Dict.t -> Bstr.t -> int -> Bstr.t -> int -> int -> int
+  compression_context ->
+  dictionary ->
+  Bstr.t ->
+  int ->
+  Bstr.t ->
+  int ->
+  int ->
+  int
   = "caml_zstd_compress_bigstring_with_context_and_dictionary_bytecode"
     "caml_zstd_compress_bigstring_with_context_and_dictionary"
 
@@ -42,12 +41,19 @@ external compress_string : string -> int -> bytes -> int -> int -> int
   = "caml_zstd_compress_string"
 
 external compress_string_with_context :
-  Cctx.t -> string -> int -> bytes -> int -> int -> int
+  compression_context -> string -> int -> bytes -> int -> int -> int
   = "caml_zstd_compress_string_with_context_bytecode"
     "caml_zstd_compress_string_with_context"
 
 external compress_string_with_context_and_dictionary :
-  Cctx.t -> Dict.t -> string -> int -> bytes -> int -> int -> int
+  compression_context ->
+  dictionary ->
+  string ->
+  int ->
+  bytes ->
+  int ->
+  int ->
+  int
   = "caml_zstd_compress_string_with_context_and_dictionary_bytecode"
     "caml_zstd_compress_string_with_context_and_dictionary"
 
@@ -55,11 +61,11 @@ external decompress_bigstring : Bstr.t -> Bstr.t -> int -> int -> int
   = "caml_zstd_decompress_bigstring"
 
 external decompress_bigstring_with_context :
-  Dctx.t -> Bstr.t -> Bstr.t -> int -> int -> int
+  decompression_context -> Bstr.t -> Bstr.t -> int -> int -> int
   = "caml_zstd_decompress_bigstring_with_context"
 
 external decompress_bigstring_with_context_and_dictionary :
-  Dctx.t -> Dict.t -> Bstr.t -> Bstr.t -> int -> int -> int
+  decompression_context -> dictionary -> Bstr.t -> Bstr.t -> int -> int -> int
   = "caml_zstd_decompress_bigstring_with_context_and_dictionary_bytecode"
     "caml_zstd_decompress_bigstring_with_context_and_dictionary"
 
@@ -67,11 +73,11 @@ external decompress_string : string -> bytes -> int -> int
   = "caml_zstd_decompress_string"
 
 external decompress_string_with_context :
-  Dctx.t -> string -> bytes -> int -> int
+  decompression_context -> string -> bytes -> int -> int
   = "caml_zstd_decompress_string_with_context"
 
 external decompress_string_with_context_and_dictionary :
-  Dctx.t -> Dict.t -> string -> bytes -> int -> int
+  decompression_context -> dictionary -> string -> bytes -> int -> int
   = "caml_zstd_decompress_string_with_context_and_dictionary"
 
 module Directive = struct
@@ -81,9 +87,9 @@ module Directive = struct
 end
 
 external compress_stream2 :
-  Cctx.t -> Io_buffer.t -> Io_buffer.t -> int -> int * int * int
+  compression_context -> Io_buffer.t -> Io_buffer.t -> int -> int * int * int
   = "caml_zstd_compress_stream2"
 
 external decompress_stream :
-  Dstream.t -> Io_buffer.t -> Io_buffer.t -> int * int * int
+  decompression_stream -> Io_buffer.t -> Io_buffer.t -> int * int * int
   = "caml_zstd_decompress_stream"

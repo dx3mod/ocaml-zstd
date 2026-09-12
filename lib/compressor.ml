@@ -1,11 +1,11 @@
 module Context = struct
-  type t = { cctx : Bindings.Cctx.t }
+  type t = { cctx : Bindings.compression_context }
 
-  let create () = { cctx = Bindings.Cctx.create () }
+  let create () = { cctx = Bindings.create_compression_context () }
 end
 
 let compress_bigstring ?context ?dictionary ~level bs =
-  let compressed_capacity = Bindings.Misc.compress_bound @@ Bstr.length bs in
+  let compressed_capacity = Bindings.compress_bound @@ Bstr.length bs in
   let buffer = Bstr.create compressed_capacity and length = Bstr.length bs in
 
   let len =
@@ -28,7 +28,7 @@ let compress_bigstring ?context ?dictionary ~level bs =
   Bstr.sub ~off:0 ~len buffer
 
 let compress_string ?context ?dictionary ~level s =
-  let compressed_capacity = Bindings.Misc.compress_bound @@ String.length s in
+  let compressed_capacity = Bindings.compress_bound @@ String.length s in
   let bytes = Bytes.create compressed_capacity and length = String.length s in
 
   let length =
