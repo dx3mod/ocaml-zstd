@@ -4,56 +4,59 @@ module Context = struct
   let create () = { dctx = Bindings.create_decompression_context () }
 end
 
-let decompress_string_into_bytes ?context ?dictionary ~original_size string
-    bytes =
-  match (context, dictionary) with
-  | None, None -> Bindings.decompress_string string bytes original_size
-  | Some context, None ->
-      Bindings.decompress_string_with_context context.Context.dctx string bytes
-        original_size
-  | Some context, Some dictionary ->
-      Bindings.decompress_string_with_context_and_dictionary
-        context.Context.dctx dictionary string bytes original_size
-  | None, Some dictionary ->
-      Bindings.decompress_string_with_context_and_dictionary
-        Context.(create ()).dctx dictionary string bytes original_size
-
-let decompress_string ?context ?dictionary ~original_size string =
-  let bytes = Bytes.create original_size in
-  let length =
-    decompress_string_into_bytes ?context ?dictionary ~original_size string
-      bytes
-  in
-
-  if length = original_size then Bytes.unsafe_to_string bytes
-  else Bytes.sub_string bytes 0 length
-
-let decompress_bigstring_into ?context ?dictionary ~original_size bs buffer =
+let decompress_string_into_bytes ?context ?dictionary compressed_string
+    uncompressed_output_bytes =
   match (context, dictionary) with
   | None, None ->
-      Bindings.decompress_bigstring bs buffer Bstr.(length buffer) original_size
+      Bindings.decompress_string compressed_string uncompressed_output_bytes
   | Some context, None ->
-      Bindings.decompress_bigstring_with_context context.Context.dctx bs buffer
-        Bstr.(length buffer)
-        original_size
+      Bindings.decompress_string_with_context context.Context.dctx
+        compressed_string uncompressed_output_bytes
+  | Some context, Some dictionary ->
+      Bindings.decompress_string_with_context_and_dictionary
+        context.Context.dctx dictionary compressed_string
+        uncompressed_output_bytes
+  | None, Some dictionary ->
+      Bindings.decompress_string_with_context_and_dictionary
+        Context.(create ()).dctx dictionary compressed_string
+        uncompressed_output_bytes
+
+let decompress_string ?context ?dictionary ~original_size compressed_string =
+  let uncompressed_output_bytes = Bytes.create original_size in
+
+  decompress_string_into_bytes ?context ?dictionary compressed_string
+    uncompressed_output_bytes
+  |> ignore;
+
+  Bytes.unsafe_to_string uncompressed_output_bytes
+
+let decompress_bigstring_into ?context ?dictionary compressed_bigstring
+    uncompressed_output_bigstring =
+  match (context, dictionary) with
+  | None, None ->
+      Bindings.decompress_bigstring compressed_bigstring
+        uncompressed_output_bigstring
+  | Some context, None ->
+      Bindings.decompress_bigstring_with_context context.Context.dctx
+        compressed_bigstring uncompressed_output_bigstring
   | Some context, Some dictionary ->
       Bindings.decompress_bigstring_with_context_and_dictionary
-        context.Context.dctx dictionary bs buffer
-        Bstr.(length buffer)
-        original_size
+        context.Context.dctx dictionary compressed_bigstring
+        uncompressed_output_bigstring
   | None, Some dictionary ->
       Bindings.decompress_bigstring_with_context_and_dictionary
-        Context.(create ()).dctx dictionary bs buffer
-        Bstr.(length buffer)
-        original_size
+        Context.(create ()).dctx dictionary compressed_bigstring
+        uncompressed_output_bigstring
 
-let decompress_bigstring ?context ?dictionary ~original_size bs =
-  let buffer = Bstr.create original_size in
-  let len =
-    decompress_bigstring_into ?context ?dictionary ~original_size bs buffer
-  in
+let decompress_bigstring ?context ?dictionary ~original_size
+    compressed_bigstring =
+  let uncompressed_output_bigstring = Bstr.create original_size in
 
-  if len = original_size then buffer else Bstr.sub ~off:0 ~len buffer
+  decompress_bigstring_into ?context ?dictionary compressed_bigstring
+    uncompressed_output_bigstring
+  |> ignore;
+
+  uncompressed_output_bigstring
 
 module Stream = struct
   type t = { dstream : Bindings.decompression_stream }

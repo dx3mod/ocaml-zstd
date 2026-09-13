@@ -104,13 +104,23 @@ CAMLprim value caml_zstd_compress_bound(value src_size)
 // COMPRESS
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CAMLprim value caml_zstd_compress_bigstring(value src_buf, value src_len, value dst_buf, value dst_len, value level)
+CAMLprim value caml_zstd_compress_bigstring(value src_buf, value dst_buf, value level)
 {
-  CAMLparam5(src_buf, src_len, dst_buf, dst_len, level);
+  CAMLparam3(src_buf, dst_buf, level);
 
-  int result = ZSTD_compress(
-      Caml_ba_data_val(dst_buf), Int_val(dst_len), Caml_ba_data_val(src_buf),
-      Int_val(src_len), Int_val(level));
+  char *const uncompressed_data = Caml_ba_data_val(src_buf);
+  const size_t uncompressed_data_length = Caml_ba_array_val(src_buf)->dim[0];
+
+  char *const compressed_output_buffer = Caml_ba_data_val(dst_buf);
+  const size_t compressed_output_buffer_length = Caml_ba_array_val(dst_buf)->dim[0];
+
+  const int compression_level = Int_val(level);
+
+  caml_enter_blocking_section();
+  const int result = ZSTD_compress(compressed_output_buffer, compressed_output_buffer_length,
+                                   uncompressed_data, uncompressed_data_length,
+                                   compression_level);
+  caml_leave_blocking_section();
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
@@ -118,14 +128,26 @@ CAMLprim value caml_zstd_compress_bigstring(value src_buf, value src_len, value 
   CAMLreturn(Val_int(result));
 }
 
-CAMLprim value caml_zstd_compress_bigstring_with_context(value context, value src_buf, value src_len, value dst_buf, value dst_len, value level)
+CAMLprim value caml_zstd_compress_bigstring_with_context(value context, value src_buf, value dst_buf, value level)
 {
-  CAMLparam5(src_buf, src_len, dst_buf, dst_len, level);
-  CAMLxparam1(context);
+  CAMLparam4(context, src_buf, dst_buf, level);
 
-  int result = ZSTD_compressCCtx(Zstd_cctx_val(context),
-                                 Caml_ba_data_val(dst_buf), Int_val(dst_len), Caml_ba_data_val(src_buf),
-                                 Int_val(src_len), Int_val(level));
+  char *const uncompressed_data = Caml_ba_data_val(src_buf);
+  const size_t uncompressed_data_length = Caml_ba_array_val(src_buf)->dim[0];
+
+  char *const compressed_output_buffer = Caml_ba_data_val(dst_buf);
+  const size_t compressed_output_buffer_length = Caml_ba_array_val(dst_buf)->dim[0];
+
+  const int compression_level = Int_val(level);
+
+  ZSTD_CCtx *const compression_context = Zstd_cctx_val(context);
+
+  caml_enter_blocking_section();
+  const int result = ZSTD_compressCCtx(compression_context,
+                                       compressed_output_buffer, compressed_output_buffer_length,
+                                       uncompressed_data, uncompressed_data_length,
+                                       compression_level);
+  caml_leave_blocking_section();
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
@@ -133,40 +155,47 @@ CAMLprim value caml_zstd_compress_bigstring_with_context(value context, value sr
   CAMLreturn(Val_int(result));
 }
 
-CAMLprim value caml_zstd_compress_bigstring_with_context_bytecode(value *argv, int argn)
+CAMLprim value caml_zstd_compress_bigstring_with_context_and_dictionary(value context, value dictionary, value src_buf, value dst_buf, value level)
 {
-  return caml_zstd_compress_bigstring_with_context(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
-}
+  CAMLparam5(context, dictionary, src_buf, dst_buf, level);
 
-CAMLprim value caml_zstd_compress_bigstring_with_context_and_dictionary(value context, value dictionary, value src_buf, value src_len, value dst_buf, value dst_len, value level)
-{
-  CAMLparam5(src_buf, src_len, dst_buf, dst_len, level);
-  CAMLxparam2(context, dictionary);
+  char *const uncompressed_data = Caml_ba_data_val(src_buf);
+  const size_t uncompressed_data_length = Caml_ba_array_val(src_buf)->dim[0];
 
-  int result = ZSTD_compress_usingDict(Zstd_cctx_val(context),
-                                       Caml_ba_data_val(dst_buf), Int_val(dst_len), Caml_ba_data_val(src_buf),
-                                       Int_val(src_len), Caml_ba_data_val(dictionary), Caml_ba_array_val(dictionary)->dim[0], Int_val(level));
+  char *const compressed_output_buffer = Caml_ba_data_val(dst_buf);
+  const size_t compressed_output_buffer_length = Caml_ba_array_val(dst_buf)->dim[0];
+
+  char *const dictionary_string = Caml_ba_data_val(dictionary);
+  const size_t dictionary_string_length = Caml_ba_array_val(dictionary)->dim[0];
+
+  const int compression_level = Int_val(level);
+
+  ZSTD_CCtx *const compression_context = Zstd_cctx_val(context);
+
+  caml_enter_blocking_section();
+  const int result = ZSTD_compress_usingDict(compression_context,
+                                             compressed_output_buffer, compressed_output_buffer_length,
+                                             uncompressed_data, uncompressed_data_length,
+                                             dictionary_string, dictionary_string_length,
+                                             compression_level);
+  caml_leave_blocking_section();
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
 
   CAMLreturn(Val_int(result));
-}
-
-CAMLprim value caml_zstd_compress_bigstring_with_context_and_dictionary_bytecode(value *argv, int argn)
-{
-  return caml_zstd_compress_bigstring_with_context_and_dictionary(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
 }
 
 ////////////////////////////////////////////////////////////////////////
 
-CAMLprim value caml_zstd_compress_string(value src_str, value src_len, value dst_bytes, value dst_len, value level)
+CAMLprim value caml_zstd_compress_string(value src_str, value dst_bytes, value level)
 {
-  CAMLparam5(src_str, src_len, dst_bytes, dst_len, level);
+  CAMLparam3(src_str, dst_bytes, level);
 
-  int result = ZSTD_compress(
-      Bytes_val(dst_bytes), Int_val(dst_len), String_val(src_str),
-      Int_val(src_len), Int_val(level));
+  const int result = ZSTD_compress(
+      Bytes_val(dst_bytes), caml_string_length(dst_bytes),
+      String_val(src_str), caml_string_length(src_str),
+      Int_val(level));
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
@@ -174,78 +203,77 @@ CAMLprim value caml_zstd_compress_string(value src_str, value src_len, value dst
   CAMLreturn(Val_int(result));
 }
 
-CAMLprim value caml_zstd_compress_string_with_context(value context, value src_str, value src_len, value dst_bytes, value dst_len, value level)
+CAMLprim value caml_zstd_compress_string_with_context(value context, value src_str, value dst_bytes, value level)
 {
-  CAMLparam5(src_str, src_len, dst_bytes, dst_len, level);
-  CAMLxparam1(context);
+  CAMLparam4(context, src_str, dst_bytes, level);
 
-  int result = ZSTD_compressCCtx(Zstd_cctx_val(context),
-                                 Bytes_val(dst_bytes), Int_val(dst_len), String_val(src_str),
-                                 Int_val(src_len), Int_val(level));
+  const int result = ZSTD_compressCCtx(
+      Zstd_cctx_val(context),
+      Bytes_val(dst_bytes), caml_string_length(dst_bytes),
+      String_val(src_str), caml_string_length(src_str),
+      Int_val(level));
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
   CAMLreturn(Val_int(result));
 }
 
-CAMLprim value caml_zstd_compress_string_with_context_bytecode(value *argv, int argn)
+CAMLprim value caml_zstd_compress_string_with_context_and_dictionary(value context, value dictionary, value src_str, value dst_bytes, value level)
 {
-  return caml_zstd_compress_string_with_context(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
-}
+  CAMLparam5(context, dictionary, src_str, dst_bytes, level);
 
-CAMLprim value caml_zstd_compress_string_with_context_and_dictionary(value context, value dictionary, value src_str, value src_len, value dst_bytes, value dst_len, value level)
-{
-  CAMLparam5(src_str, src_len, dst_bytes, dst_len, level);
-  CAMLxparam2(context, dictionary);
-
-  int result = ZSTD_compress_usingDict(Zstd_cctx_val(context),
-                                       Bytes_val(dst_bytes), Int_val(dst_len), String_val(src_str),
-                                       Int_val(src_len), Caml_ba_data_val(dictionary), Caml_ba_array_val(dictionary)->dim[0], Int_val(level));
+  const int result = ZSTD_compress_usingDict(
+      Zstd_cctx_val(context),
+      Bytes_val(dst_bytes), caml_string_length(dst_bytes),
+      String_val(src_str), caml_string_length(src_str),
+      Caml_ba_data_val(dictionary), Caml_ba_array_val(dictionary)->dim[0],
+      Int_val(level));
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
   CAMLreturn(Val_int(result));
-}
-
-CAMLprim value caml_zstd_compress_string_with_context_and_dictionary_bytecode(value *argv, int argn)
-{
-  return caml_zstd_compress_string_with_context_and_dictionary(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DECOMPRESS
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CAMLprim value caml_zstd_decompress_string(value src_str, value dst_bytes, value original_size)
+CAMLprim value caml_zstd_decompress_string(value src_str, value dst_bytes)
 {
-  CAMLparam3(src_str, dst_bytes, original_size);
+  CAMLparam2(src_str, dst_bytes);
 
-  int result = ZSTD_decompress(Bytes_val(dst_bytes), Int_val(original_size), String_val(src_str), caml_string_length(src_str));
+  const int result = ZSTD_decompress(
+      Bytes_val(dst_bytes), caml_string_length(dst_bytes),
+      String_val(src_str), caml_string_length(src_str));
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
   CAMLreturn(Val_int(result));
 }
 
-CAMLprim value caml_zstd_decompress_string_with_context(value context, value src_str, value dst_bytes, value original_size)
+CAMLprim value caml_zstd_decompress_string_with_context(value context, value src_str, value dst_bytes)
 {
-  CAMLparam4(context, src_str, dst_bytes, original_size);
+  CAMLparam3(context, src_str, dst_bytes);
 
-  int result = ZSTD_decompressDCtx(Zstd_dctx_val(context), Bytes_val(dst_bytes), caml_string_length(dst_bytes), String_val(src_str), Int_val(original_size));
+  const int result = ZSTD_decompressDCtx(
+      Zstd_dctx_val(context),
+      Bytes_val(dst_bytes), caml_string_length(dst_bytes),
+      String_val(src_str), caml_string_length(src_str));
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
   CAMLreturn(Val_int(result));
 }
 
-CAMLprim value caml_zstd_decompress_string_with_context_and_dictionary(value context, value dictionary, value src_str, value dst_bytes, value original_size)
+CAMLprim value caml_zstd_decompress_string_with_context_and_dictionary(value context, value dictionary, value src_str, value dst_bytes)
 {
-  CAMLparam5(context, dictionary, src_str, dst_bytes, original_size);
+  CAMLparam4(context, dictionary, src_str, dst_bytes);
 
-  int result = ZSTD_decompress_usingDict(Zstd_dctx_val(context), Bytes_val(dst_bytes),
-                                         caml_string_length(dst_bytes), String_val(src_str), Int_val(original_size),
-                                         String_val(dictionary),
-                                         caml_string_length(dictionary));
+  const int result = ZSTD_decompress_usingDict(
+      Zstd_dctx_val(context),
+      Bytes_val(dst_bytes), caml_string_length(dst_bytes),
+      String_val(src_str), caml_string_length(src_str),
+      Caml_ba_data_val(dictionary), Caml_ba_array_val(dictionary)->dim[0]);
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
@@ -254,48 +282,73 @@ CAMLprim value caml_zstd_decompress_string_with_context_and_dictionary(value con
 
 ////////////////////////////////////////////////////////////////////////
 
-CAMLprim value caml_zstd_decompress_bigstring(value src_buf, value dst_buf, value dst_cap, value original_size)
+CAMLprim value caml_zstd_decompress_bigstring(value src_buf, value dst_buf)
 {
-  CAMLparam4(src_buf, dst_buf, dst_cap, original_size);
+  CAMLparam2(src_buf, dst_buf);
 
-  int result = ZSTD_decompress(Caml_ba_data_val(dst_buf), Int_val(dst_cap), Caml_ba_data_val(src_buf), Int_val(original_size));
+  char *const compressed_data = Caml_ba_data_val(src_buf);
+  const size_t compressed_data_length = Caml_ba_array_val(src_buf)->dim[0];
+
+  char *const uncompressed_output_buffer = Caml_ba_data_val(dst_buf);
+  const size_t uncompressed_output_buffer_length = Caml_ba_array_val(dst_buf)->dim[0];
+
+  caml_enter_blocking_section();
+  int result = ZSTD_decompress(uncompressed_output_buffer, uncompressed_output_buffer_length, compressed_data, compressed_data_length);
+  caml_leave_blocking_section();
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
   CAMLreturn(Val_int(result));
 }
 
-CAMLprim value caml_zstd_decompress_bigstring_with_context(value context, value src_buf, value dst_buf, value dst_cap, value original_size)
+CAMLprim value caml_zstd_decompress_bigstring_with_context(value context, value src_buf, value dst_buf)
 {
-  CAMLparam5(context, src_buf, dst_buf, dst_cap, original_size);
+  CAMLparam3(context, src_buf, dst_buf);
 
-  int result = ZSTD_decompressDCtx(
-      Zstd_dctx_val(context),
-      Caml_ba_data_val(dst_buf), Int_val(dst_cap), Caml_ba_data_val(src_buf), Int_val(original_size));
+  char *const compressed_data = Caml_ba_data_val(src_buf);
+  const size_t compressed_data_length = Caml_ba_array_val(src_buf)->dim[0];
+
+  char *const uncompressed_output_buffer = Caml_ba_data_val(dst_buf);
+  const size_t uncompressed_output_buffer_length = Caml_ba_array_val(dst_buf)->dim[0];
+
+  ZSTD_DCtx *const decompression_context = Zstd_dctx_val(context);
+
+  caml_enter_blocking_section();
+  int result = ZSTD_decompressDCtx(decompression_context,
+                                   uncompressed_output_buffer, uncompressed_output_buffer_length,
+                                   compressed_data, compressed_data_length);
+  caml_leave_blocking_section();
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
   CAMLreturn(Val_int(result));
 }
 
-CAMLprim value caml_zstd_decompress_bigstring_with_context_and_dictionary(value context, value dictionary, value src_buf, value dst_buf, value dst_cap, value original_size)
+CAMLprim value caml_zstd_decompress_bigstring_with_context_and_dictionary(value context, value dictionary, value src_buf, value dst_buf)
 {
-  CAMLparam5(context, src_buf, dst_buf, dst_cap, original_size);
-  CAMLxparam1(dictionary);
+  CAMLparam4(context, src_buf, dst_buf, dictionary);
 
-  int result = ZSTD_decompress_usingDict(
-      Zstd_dctx_val(context),
-      Caml_ba_data_val(dst_buf), Int_val(dst_cap), Caml_ba_data_val(src_buf),
-      Int_val(original_size), Caml_ba_data_val(dictionary), Caml_ba_array_val(dictionary)->dim[0]);
+  char *const compressed_data = Caml_ba_data_val(src_buf);
+  const size_t compressed_data_length = Caml_ba_array_val(src_buf)->dim[0];
+
+  char *const uncompressed_output_buffer = Caml_ba_data_val(dst_buf);
+  const size_t uncompressed_output_buffer_length = Caml_ba_array_val(dst_buf)->dim[0];
+
+  char *const dictionary_string = Caml_ba_data_val(dictionary);
+  const size_t dictionary_string_length = Caml_ba_array_val(dictionary)->dim[0];
+
+  ZSTD_DCtx *const decompression_context = Zstd_dctx_val(context);
+
+  caml_enter_blocking_section();
+  int result = ZSTD_decompress_usingDict(decompression_context,
+                                         uncompressed_output_buffer, uncompressed_output_buffer_length,
+                                         compressed_data, compressed_data_length,
+                                         dictionary_string, dictionary_string_length);
+  caml_leave_blocking_section();
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
   CAMLreturn(Val_int(result));
-}
-
-CAMLprim value caml_zstd_decompress_bigstring_with_context_and_dictionary_bytecode(value *argv, int argn)
-{
-  return caml_zstd_decompress_bigstring_with_context_and_dictionary(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
