@@ -1,7 +1,8 @@
 module Context = struct
-  type t = { dctx : Bindings.decompression_context }
+  type t = { dctx : Bindings.decompression_context; mutex : Mutex.t }
 
-  let create () = { dctx = Bindings.create_decompression_context () }
+  let create () =
+    { dctx = Bindings.create_decompression_context (); mutex = Mutex.create () }
 end
 
 let decompress_string_into_bytes ?context ?dictionary compressed_string
@@ -10,12 +11,13 @@ let decompress_string_into_bytes ?context ?dictionary compressed_string
   | None, None ->
       Bindings.decompress_string compressed_string uncompressed_output_bytes
   | Some context, None ->
-      Bindings.decompress_string_with_context context.Context.dctx
-        compressed_string uncompressed_output_bytes
-  | Some context, Some dictionary ->
-      Bindings.decompress_string_with_context_and_dictionary
-        context.Context.dctx dictionary compressed_string
+      Mutex.protect context.Context.mutex @@ fun () ->
+      Bindings.decompress_string_with_context context.dctx compressed_string
         uncompressed_output_bytes
+  | Some context, Some dictionary ->
+      Mutex.protect context.Context.mutex @@ fun () ->
+      Bindings.decompress_string_with_context_and_dictionary context.dctx
+        dictionary compressed_string uncompressed_output_bytes
   | None, Some dictionary ->
       Bindings.decompress_string_with_context_and_dictionary
         Context.(create ()).dctx dictionary compressed_string
@@ -37,12 +39,13 @@ let decompress_bigstring_into ?context ?dictionary compressed_bigstring
       Bindings.decompress_bigstring compressed_bigstring
         uncompressed_output_bigstring
   | Some context, None ->
-      Bindings.decompress_bigstring_with_context context.Context.dctx
+      Mutex.protect context.Context.mutex @@ fun () ->
+      Bindings.decompress_bigstring_with_context context.dctx
         compressed_bigstring uncompressed_output_bigstring
   | Some context, Some dictionary ->
-      Bindings.decompress_bigstring_with_context_and_dictionary
-        context.Context.dctx dictionary compressed_bigstring
-        uncompressed_output_bigstring
+      Mutex.protect context.mutex @@ fun () ->
+      Bindings.decompress_bigstring_with_context_and_dictionary context.dctx
+        dictionary compressed_bigstring uncompressed_output_bigstring
   | None, Some dictionary ->
       Bindings.decompress_bigstring_with_context_and_dictionary
         Context.(create ()).dctx dictionary compressed_bigstring
@@ -59,12 +62,17 @@ let decompress_bigstring ?context ?dictionary ~original_size
   uncompressed_output_bigstring
 
 module Stream = struct
-  type t = { dstream : Bindings.decompression_stream }
+  type t = { dstream : Bindings.decompression_stream; mutex : Mutex.t }
 
-  let create () = { dstream = Bindings.create_decompression_stream () }
+  let create () =
+    {
+      dstream = Bindings.create_decompression_stream ();
+      mutex = Mutex.create ();
+    }
 
   let decompress ~in_buffer ~out_buffer stream =
     let remaining, consumed, decompressed =
+      Mutex.protect stream.mutex @@ fun () ->
       Bindings.decompress_stream stream.dstream in_buffer out_buffer
     in
 

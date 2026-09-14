@@ -1,7 +1,8 @@
 module Context = struct
-  type t = { cctx : Bindings.compression_context }
+  type t = { cctx : Bindings.compression_context; mutex : Mutex.t }
 
-  let create () = { cctx = Bindings.create_compression_context () }
+  let create () =
+    { cctx = Bindings.create_compression_context (); mutex = Mutex.create () }
 end
 
 let compress_bigstring_into ?context ?dictionary ~level uncompressed_bigstring
@@ -11,12 +12,13 @@ let compress_bigstring_into ?context ?dictionary ~level uncompressed_bigstring
       Bindings.compress_bigstring uncompressed_bigstring
         compressed_output_bigstring level
   | Some context, None ->
-      Bindings.compress_bigstring_with_context context.Context.cctx
+      Mutex.protect context.Context.mutex @@ fun () ->
+      Bindings.compress_bigstring_with_context context.cctx
         uncompressed_bigstring compressed_output_bigstring level
   | Some context, Some dictionary ->
-      Bindings.compress_bigstring_with_context_and_dictionary
-        context.Context.cctx dictionary uncompressed_bigstring
-        compressed_output_bigstring level
+      Mutex.protect context.Context.mutex @@ fun () ->
+      Bindings.compress_bigstring_with_context_and_dictionary context.cctx
+        dictionary uncompressed_bigstring compressed_output_bigstring level
   | None, Some dictionary ->
       Bindings.compress_bigstring_with_context_and_dictionary
         Context.(create ()).cctx dictionary uncompressed_bigstring
@@ -41,10 +43,12 @@ let compress_string_into ?context ?dictionary ~level uncompressed_string
   | None, None ->
       Bindings.compress_string uncompressed_string compressed_output_bytes level
   | Some context, None ->
-      Bindings.compress_string_with_context context.Context.cctx
-        uncompressed_string compressed_output_bytes level
+      Mutex.protect context.Context.mutex @@ fun () ->
+      Bindings.compress_string_with_context context.cctx uncompressed_string
+        compressed_output_bytes level
   | Some context, Some dictionary ->
-      Bindings.compress_string_with_context_and_dictionary context.Context.cctx
+      Mutex.protect context.Context.mutex @@ fun () ->
+      Bindings.compress_string_with_context_and_dictionary context.cctx
         dictionary uncompressed_string compressed_output_bytes level
   | None, Some dictionary ->
       Bindings.compress_string_with_context_and_dictionary
@@ -81,8 +85,8 @@ module Stream = struct
     in
 
     let remaining, consumed, compressed =
-      Bindings.compress_stream2 context.Context.cctx in_buffer out_buffer
-        directive
+      Mutex.protect context.Context.mutex @@ fun () ->
+      Bindings.compress_stream2 context.cctx in_buffer out_buffer directive
     in
 
     (~remaining, ~consumed, ~compressed)
