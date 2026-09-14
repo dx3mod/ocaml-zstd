@@ -10,9 +10,7 @@ module Io_buffer = Io_buffer
 
 (** {2 Miscellaneous} *)
 
-(** [version ()]
-
-    Returns the version of the linked libzstd C library as a triple
+(** Returns the version of the linked libzstd C library as a triple
     [(major, minor, patch)].*)
 let version () =
   let v = Bindings.version () in

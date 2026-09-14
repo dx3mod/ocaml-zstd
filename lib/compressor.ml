@@ -5,6 +5,15 @@ module Context = struct
     { cctx = Bindings.create_compression_context (); mutex = Mutex.create () }
 end
 
+module Frame = struct
+  type t = [ `String of string | `Bigstring of Bstr.t ]
+
+  let uncompressed_size = function
+    | `String string -> Bindings.get_decompression_size_of_string string
+    | `Bigstring bigstring ->
+        Bindings.get_decompression_size_of_bigstring bigstring
+end
+
 let compress_bigstring_into ?context ?dictionary ~level uncompressed_bigstring
     compressed_output_bigstring =
   match (context, dictionary) with

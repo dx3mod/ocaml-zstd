@@ -27,6 +27,12 @@ external compress_bound : int -> int = "caml_zstd_compress_bound"
 (** [compress_bound src_size] returns an upper bound on the compressed size for
     an input of [src_size] bytes. *)
 
+external get_decompression_size_of_string : string -> int
+  = "caml_get_frame_string_content_size"
+
+external get_decompression_size_of_bigstring : Bstr.t -> int
+  = "caml_get_frame_bigstring_content_size"
+
 external compress_bigstring : Bstr.t -> Bstr.t -> int -> int
   = "caml_zstd_compress_bigstring"
 (** [compress_bigstring uncompressed compressed level] compresses [uncompressed]

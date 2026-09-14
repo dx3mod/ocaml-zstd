@@ -19,6 +19,12 @@ module Context : sig
   (** [create ()] returns a fresh compression context. *)
 end
 
+module Frame : sig
+  type t = [ `String of string | `Bigstring of Bstr.t ]
+
+  val uncompressed_size : t -> int
+end
+
 (** {1 One-shot API} *)
 
 val compress_bigstring_into :

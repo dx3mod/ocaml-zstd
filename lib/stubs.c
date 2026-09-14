@@ -100,6 +100,26 @@ CAMLprim value caml_zstd_compress_bound(value src_size)
   CAMLreturn(Val_long(ZSTD_COMPRESSBOUND(Long_val(src_size))));
 }
 
+CAMLprim value caml_get_frame_string_content_size(value compressed_string)
+{
+  CAMLparam1(compressed_string);
+
+  const size_t result =
+      ZSTD_getFrameContentSize(String_val(compressed_string), caml_string_length(compressed_string));
+
+  CAMLreturn(Val_long(result));
+}
+
+CAMLprim value caml_get_frame_bigstring_content_size(value compressed_bigstring)
+{
+  CAMLparam1(compressed_bigstring);
+
+  const size_t result =
+      ZSTD_getFrameContentSize(Caml_ba_data_val(compressed_bigstring), Caml_ba_array_val(compressed_bigstring)->dim[0]);
+
+  CAMLreturn(Val_long(result));
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // COMPRESS
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
