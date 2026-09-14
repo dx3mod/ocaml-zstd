@@ -33,6 +33,18 @@ external get_decompression_size_of_string : string -> int
 external get_decompression_size_of_bigstring : Bstr.t -> int
   = "caml_get_frame_bigstring_content_size"
 
+external get_decompression_stream_out_size : unit -> int
+  = "caml_zstd_decompression_stream_out_size"
+
+external get_decompression_stream_in_size : unit -> int
+  = "caml_zstd_decompression_stream_in_size"
+
+external get_compression_stream_out_size : unit -> int
+  = "caml_zstd_compression_stream_out_size"
+
+external get_compression_stream_in_size : unit -> int
+  = "caml_zstd_compression_stream_in_size"
+
 external compress_bigstring : Bstr.t -> Bstr.t -> int -> int
   = "caml_zstd_compress_bigstring"
 (** [compress_bigstring uncompressed compressed level] compresses [uncompressed]

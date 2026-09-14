@@ -413,6 +413,16 @@ CAMLprim value caml_zstd_compress_stream2(value context, value in_buffer, value 
   CAMLreturn(tup);
 }
 
+CAMLprim value caml_zstd_compression_stream_in_size(value unit)
+{
+  return Val_long(ZSTD_CStreamInSize());
+}
+
+CAMLprim value caml_zstd_compression_stream_out_size(value unit)
+{
+  return Val_long(ZSTD_CStreamOutSize());
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // STREAM DECOMPRESS
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -483,4 +493,14 @@ CAMLprim value caml_zstd_decompress_stream(value dstream, value in_buffer, value
   initialize_compression_result_tuple(tup, remaining, input.pos, output.pos);
 
   CAMLreturn(tup);
+}
+
+CAMLprim value caml_zstd_decompression_stream_in_size(value unit)
+{
+  return Val_long(ZSTD_DStreamInSize());
+}
+
+CAMLprim value caml_zstd_decompression_stream_out_size(value unit)
+{
+  return Val_long(ZSTD_DStreamOutSize());
 }
