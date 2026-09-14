@@ -3,7 +3,7 @@
     Provides one-shot functions for compressing strings and {!Bstr.t} values,
     plus a streaming API for incremental compression.
 
-    All entry points accept an optional compression [level] (a Zstandard quality
+    All functions accept an optional compression [level] (a Zstandard quality
     setting, typically between [1] and [22]) and may reuse a {!Context.t} across
     calls to avoid re-allocating internal state. A {!Dictionary.t} can be
     supplied to improve compression of small or repetitive inputs. *)
@@ -82,6 +82,10 @@ module Stream : sig
   (** [of_context ctx] reuses [ctx] as a streaming state, so that any state it
       has accumulated is carried over. *)
 
+  exception Already_closed
+  (** Raised by {!compress} when the stream has already been terminated with
+      [`End]. *)
+
   val compress :
     in_buffer:Io_buffer.t ->
     out_buffer:Io_buffer.t ->
@@ -95,8 +99,13 @@ module Stream : sig
 
       - [`Continue] processes input without forcing output to be flushed,
         allowing the compressor to buffer data for better ratios.
-      - [`Flush] flushes all input processed so far into [out_buffer].
-      - [`End] signals the end of the stream and flushes remaining data.
+      - [`Flush] emits all buffered input using an end-of-frame marker without
+        closing the stream. Further calls may be made, but any new input begins
+        a new frame.
+      - [`End] behaves like [`Flush] and additionally marks the stream as
+        closed; subsequent calls on the same [stream] raise {!Already_closed}.
+
+      @raise Already_closed if [stream] has already been terminated with [`End].
 
       The returned triple reports:
 
@@ -106,5 +115,6 @@ module Stream : sig
         call.
 
       Repeat calls (resupplying input or draining output as needed) until the
-      caller's input has been fully consumed and the stream has been ended. *)
+      caller's input has been fully consumed and the stream has been ended with
+      [`End]. *)
 end

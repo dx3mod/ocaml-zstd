@@ -71,22 +71,29 @@ let compress_string ?context ?dictionary ~level uncompressed_string =
   else Bytes.sub_string compressed_output_bytes 0 length
 
 module Stream = struct
-  type t = Context.t
+  type t = { context : Context.t; mutable closed : bool }
 
-  let create () = Context.create ()
-  and of_context context = context
+  exception Already_closed
 
-  let compress ~in_buffer ~out_buffer context directive =
+  let create () = { context = Context.create (); closed = false }
+  and of_context context = { context; closed = false }
+
+  let compress ~in_buffer ~out_buffer stream directive =
+    if stream.closed then raise Already_closed;
+
     let directive =
       match directive with
       | `Continue -> Bindings.Directive.continue
       | `Flush -> Bindings.Directive.eend
-      | `End -> Bindings.Directive.eend
+      | `End ->
+          stream.closed <- true;
+          Bindings.Directive.eend
     in
 
     let remaining, consumed, compressed =
-      Mutex.protect context.Context.mutex @@ fun () ->
-      Bindings.compress_stream2 context.cctx in_buffer out_buffer directive
+      Mutex.protect stream.context.mutex @@ fun () ->
+      Bindings.compress_stream2 stream.context.cctx in_buffer out_buffer
+        directive
     in
 
     (~remaining, ~consumed, ~compressed)
