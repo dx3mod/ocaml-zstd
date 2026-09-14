@@ -39,12 +39,14 @@ CAMLprim value caml_create_zstd_cctx_s(value unit)
   CAMLparam1(unit);
   CAMLlocal1(cctx_val);
 
+  cctx_val = caml_alloc_custom(&zstd_cctx_ops, sizeof(ZSTD_CCtx *), 0, 1);
+  Zstd_cctx_val(cctx_val) = NULL;
+
   ZSTD_CCtx *cctx = ZSTD_createCCtx();
 
   if (cctx == NULL)
     caml_failwith("create_zstd_cctx_s have NULL");
 
-  cctx_val = caml_alloc_custom(&zstd_cctx_ops, sizeof(ZSTD_CCtx *), 0, 1);
   Zstd_cctx_val(cctx_val) = cctx;
 
   CAMLreturn(cctx_val);
@@ -76,12 +78,14 @@ CAMLprim value caml_create_zstd_dctx_s(value unit)
   CAMLparam1(unit);
   CAMLlocal1(dctx_val);
 
+  dctx_val = caml_alloc_custom(&zstd_dctx_ops, sizeof(ZSTD_DCtx *), 0, 1);
+  Zstd_dctx_val(dctx_val) = NULL;
+
   ZSTD_DCtx *dctx = ZSTD_createDCtx();
 
   if (dctx == NULL)
-    caml_failwith("create_zstd_cctx_s have NULL");
+    caml_failwith("create_zstd_dctx_s have NULL");
 
-  dctx_val = caml_alloc_custom(&zstd_dctx_ops, sizeof(ZSTD_DCtx *), 0, 1);
   Zstd_dctx_val(dctx_val) = dctx;
 
   CAMLreturn(dctx_val);
@@ -424,12 +428,14 @@ CAMLprim value caml_create_zstd_dstream(value unit)
   CAMLparam1(unit);
   CAMLlocal1(dstream_val);
 
+  dstream_val = caml_alloc_custom(&zstd_dstream_ops, sizeof(ZSTD_DStream *), 0, 1);
+  Zstd_dstream_val(dstream_val) = NULL;
+
   ZSTD_DStream *dstream = ZSTD_createDStream();
 
   if (dstream == NULL)
     caml_failwith("caml_create_zstd_dstream have NULL");
 
-  dstream_val = caml_alloc_custom(&zstd_dstream_ops, sizeof(ZSTD_DStream *), 0, 1);
   Zstd_dstream_val(dstream_val) = dstream;
 
   CAMLreturn(dstream_val);

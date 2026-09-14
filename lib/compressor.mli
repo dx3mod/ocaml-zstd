@@ -1,7 +1,7 @@
 (** Zstandard compression module.
 
-    Provides one-shot functions for compressing strings and {!Bstr.t} values,
-    plus a streaming API for incremental compression.
+    Provides one-shot functions for compressing strings and bigstrings values
+    with a streaming API for incremental compression.
 
     All functions accept an optional compression [level] (a Zstandard quality
     setting, typically between [1] and [22]) and may reuse a {!Context.t} across

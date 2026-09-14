@@ -1,7 +1,7 @@
 (** Zstandard decompression module.
 
-    Provides one-shot functions for decompressing strings and {!Bstr.t} values,
-    plus a streaming API for incremental decompression.
+    Provides one-shot functions for decompressing strings and bigstrings values,
+    with a streaming API for incremental decompression.
 
     All functions accept an optional decompression context that may be reused
     across calls to avoid re-allocating internal state, as well as an optional
