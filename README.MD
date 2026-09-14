@@ -11,12 +11,12 @@ library to your dependencies.
 ## In use
 
 The library offers a small collection of abstractions for compressing and
-decompressing data. They are exposed as two modules, `Zstd.Compressor` and
-`Zstd.Decompressor`, each providing a one-shot API and a streaming API.
+decompressing data. They are exposed as two modules: `Zstd.Compressor` and
+`Zstd.Decompressor`, each providing one-shot and streaming API.
 
 ### One-shot compression and decompression
 
-For values that fit comfortably in memory, use the one-shot helpers.
+For values that fit comfortably in memory, use one-shot functions.
 
 ```ocaml
 let source = "Contrary to popular belief, Lorem Ipsum is not simply random text."
@@ -28,11 +28,11 @@ let decompressed =
     ~original_size:(String.length source) compressed
 ```
 
-`level` is a Zstandard quality setting between `1` (fastest) and `22`
+The `level` is a Zstandard quality setting between `1` (fastest) and `22`
 (best ratio); `3` is a good default. When decompressing you must pass
 `~original_size`, the exact number of bytes of the original data.
 
-Equivalent functions for `Bstr.t` are available under the same names:
+Equivalent functions for bigstrings are available under the same names:
 `compress_bigstring` and `decompress_bigstring`.
 
 ### Reusing contexts
@@ -56,46 +56,42 @@ control how output is flushed.
 
 ```ocaml
 let compress_streaming uncompressed_bigstring =
-  let ctx = Zstd.Compressor.Context.create () in
+  let stream = Zstd.Compressor.Stream.create () in
   let in_buffer = Zstd.Io_buffer.make uncompressed_bigstring in
   let out_buffer = Zstd.Io_buffer.make (Bstr.create 4096) in
 
-  let (_remaining, _compressed, _written) =
-    Zstd.Compressor.Stream.compress ~in_buffer ~out_buffer ctx `End
+  let (~remaining, ~consumed, ~compressed) =
+    Zstd.Compressor.Stream.compress ~in_buffer ~out_buffer stream `Flush
   in
 
-  Bstr.sub ~off:0 ~len:out_buffer.position out_buffer.buffer
+  Bstr.sub ~off:0 ~len:compressed out_buffer.buffer
 ```
 
-The returned triple reports how many bytes are still pending in the input
-buffer, how many were consumed, and how many were written. The directive
-controls flushing:
+The returned triple reports how many bytes are still pending in the input buffer, how many were consumed, and how many compressed bytes were written to the output buffer. The directive controls flushing:
 
-- `` `Continue`` — process input without forcing output, letting the
-  compressor buffer data for better ratios.
+- `` `Continue`` — process input without forcing output, letting the compressor buffer data for better ratios.
 - `` `Flush`` — flush everything consumed so far into the output buffer.
 - `` `End`` — signal the end of the stream and flush remaining data.
 
 ### Streaming decompression
 
 The decompression stream works the same way. Give it a compressed buffer
-and an output buffer large enough to hold the decompressed data.
+and an output decompressed buffer.
 
 ```ocaml
-let decompress_streaming compressed_bigstring ~original_size =
+let decompress_streaming compressed_bigstring =
   let stream = Zstd.Decompressor.Stream.create () in
   let in_buffer = Zstd.Io_buffer.make compressed_bigstring in
   let out_buffer = Zstd.Io_buffer.make (Bstr.create 4096) in
 
-  let (_remaining, _consumed, _decompressed) =
+  let (~remaining, ~consumed, ~decompressed) =
     Zstd.Decompressor.Stream.decompress ~in_buffer ~out_buffer stream
   in
 
-  Bstr.sub ~off:0 ~len:out_buffer.position out_buffer.buffer
+  Bstr.sub ~off:0 ~len:decompressed out_buffer.buffer
 ```
 
-The returned triple reports how many compressed bytes remain in the input
-buffer, how many were read, and how many were written to the output buffer.
+The returned triple reports how many compressed bytes remain in the input compressed buffer, how many were read, and how many were written to the output decompressed buffer.
 
 ## License
 

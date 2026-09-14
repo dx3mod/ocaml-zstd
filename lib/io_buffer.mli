@@ -1,9 +1,3 @@
-type t = {
-  buffer : Bstr.t;  (** The underlying byte region (source or destination). *)
-  mutable position : int;  (** Current offset: bytes consumed or produced. *)
-  mutable size : int;
-      (** End of the region (for input) or its capacity (for output). *)
-}
 (** A byte buffer cursor used to model Zstandard input and output buffers.
 
     This type mirrors the layout of the Zstandard C API buffer structures
@@ -25,6 +19,13 @@ type t = {
     alias the same underlying {!Bstr.t}, and invariants normally maintained by
     {!make} can be broken by direct field mutation. Prefer the functions
     provided by this module. *)
+
+type t = {
+  buffer : Bstr.t;  (** The underlying byte region (source or destination). *)
+  mutable position : int;  (** Current offset: bytes consumed or produced. *)
+  mutable size : int;
+      (** End of the region (for input) or its capacity (for output). *)
+}
 
 val make : ?size:int -> ?position:int -> Bstr.t -> t
 (** [make ?size ?position buffer] creates a new buffer cursor over [buffer].

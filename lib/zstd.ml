@@ -7,4 +7,4 @@ module Compressor = Compressor
 module Decompressor = Decompressor
 module Dictionary = Dictionary
 module Io_buffer = Io_buffer
-module Bindings = Bindings
+module Bindings_intf = Bindings

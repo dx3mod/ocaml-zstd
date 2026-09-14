@@ -80,10 +80,10 @@ module Stream = struct
       | `End -> Bindings.Directive.eend
     in
 
-    let remaining, compressed, written =
+    let remaining, consumed, compressed =
       Bindings.compress_stream2 context.Context.cctx in_buffer out_buffer
         directive
     in
 
-    (~remaining, ~compressed, ~written)
+    (~remaining, ~consumed, ~compressed)
 end

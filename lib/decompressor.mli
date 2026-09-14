@@ -1,6 +1,6 @@
 (** Zstandard decompression module.
 
-    Provides one-shot helpers for decompressing strings and {!Bstr.t} values,
+    Provides one-shot functions for decompressing strings and {!Bstr.t} values,
     plus a streaming API for incremental decompression.
 
     All entry points accept an optional decompression context that may be reused
@@ -17,6 +17,8 @@ module Context : sig
   val create : unit -> t
   (** [create ()] returns a fresh decompression context. *)
 end
+
+(** {1 One-shot API} *)
 
 val decompress_string_into_bytes :
   ?context:Context.t -> ?dictionary:Dictionary.t -> string -> bytes -> int
@@ -56,6 +58,8 @@ val decompress_bigstring :
 
     This is a convenience wrapper around {!decompress_bigstring_into} that
     allocates the output buffer. *)
+
+(** {1 Streaming API} *)
 
 (** Incremental decompression. *)
 module Stream : sig

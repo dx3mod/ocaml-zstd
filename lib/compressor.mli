@@ -1,7 +1,7 @@
 (** Zstandard compression module.
 
-    Provides one-shot helpers for compressing strings and {!Bstr.t} values, plus
-    a streaming API for incremental compression.
+    Provides one-shot functions for compressing strings and {!Bstr.t} values,
+    plus a streaming API for incremental compression.
 
     All entry points accept an optional compression [level] (a Zstandard quality
     setting, typically between [1] and [22]) and may reuse a {!Context.t} across
@@ -19,6 +19,8 @@ module Context : sig
   (** [create ()] returns a fresh compression context. *)
 end
 
+(** {1 One-shot API} *)
+
 val compress_bigstring_into :
   ?context:Context.t ->
   ?dictionary:Dictionary.t ->
@@ -31,7 +33,11 @@ val compress_bigstring_into :
     [compressed_output_bigstring] and returns the number of bytes written. *)
 
 val compress_bigstring :
-  ?context:Context.t -> ?dictionary:Bstr.t -> level:int -> Bstr.t -> Bstr.t
+  ?context:Context.t ->
+  ?dictionary:Dictionary.t ->
+  level:int ->
+  Bstr.t ->
+  Bstr.t
 (** [compress_bigstring ?context ?dictionary ~level uncompressed_bigstring]
     compresses [uncompressed_bigstring] and returns a freshly allocated
     bigstring holding the compressed data.
@@ -62,6 +68,8 @@ val compress_string :
     This is a convenience wrapper around {!compress_string_into} that allocates
     the output buffer. *)
 
+(** {1 Streaming API} *)
+
 (** Incremental compression. *)
 module Stream : sig
   type t
@@ -77,12 +85,11 @@ module Stream : sig
   val compress :
     in_buffer:Io_buffer.t ->
     out_buffer:Io_buffer.t ->
-    Context.t ->
+    t ->
     [< `Continue | `End | `Flush ] ->
-    (remaining:int * compressed:int * written:int)
-  (** [compress ~in_buffer ~out_buffer context directive] feeds the pending
-      input from [in_buffer] through the compressor, appending output to
-      [out_buffer].
+    (remaining:int * consumed:int * compressed:int)
+  (** [compress ~in_buffer ~out_buffer stream directive] feeds the pending input
+      from [in_buffer] through the compressor, appending output to [out_buffer].
 
       [directive] controls flushing:
 
@@ -94,8 +101,9 @@ module Stream : sig
       The returned triple reports:
 
       - [remaining]: bytes in [in_buffer] that were not consumed;
-      - [compressed]: total bytes consumed from [in_buffer] by this call;
-      - [written]: total bytes appended to [out_buffer] by this call.
+      - [consumed]: total bytes consumed from [in_buffer] by this call;
+      - [compressed]: total compressed bytes appended to [out_buffer] by this
+        call.
 
       Repeat calls (resupplying input or draining output as needed) until the
       caller's input has been fully consumed and the stream has been ended. *)
