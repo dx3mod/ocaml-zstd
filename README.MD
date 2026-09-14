@@ -1,4 +1,4 @@
-# zstd
+<img src="https://i.ibb.co/LXfsM8S3/logos-001-2.png" width="250">
 
 A thin and modern OCaml bindings to [Zstandard] compression library.
 
