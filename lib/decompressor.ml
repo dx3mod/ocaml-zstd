@@ -1,8 +1,13 @@
+let log2 x = log x /. log 2.0 |> int_of_float
+
 module Context = struct
   type t = { dctx : Bindings.decompression_context; mutex : Mutex.t }
 
   let create () =
     { dctx = Bindings.create_decompression_context (); mutex = Mutex.create () }
+
+  let set_size_limit context size =
+    Bindings.set_decompression_context_parameter context.dctx 100 (log2 size)
 end
 
 let decompress_string_into_bytes ?context ?dictionary compressed_string
@@ -64,11 +69,15 @@ let decompress_bigstring ?context ?dictionary ~original_size
 module Stream = struct
   type t = { dstream : Bindings.decompression_stream; mutex : Mutex.t }
 
-  let create () =
-    {
-      dstream = Bindings.create_decompression_stream ();
-      mutex = Mutex.create ();
-    }
+  let create ?size_limit () =
+    let dstream = Bindings.create_decompression_stream () in
+
+    Option.iter
+      (fun size ->
+        Bindings.set_decompression_stream_parameter dstream 100 @@ log2 size)
+      size_limit;
+
+    { dstream; mutex = Mutex.create () }
 
   let in_size () = Bindings.get_decompression_stream_in_size ()
   and out_size () = Bindings.get_decompression_stream_out_size ()

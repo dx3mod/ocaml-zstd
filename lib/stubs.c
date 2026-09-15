@@ -48,6 +48,13 @@ CAMLprim value caml_create_zstd_cctx_s(value unit)
   CAMLreturn(cctx_val);
 }
 
+CAMLprim value caml_create_zstd_set_cctx_param(value context, value param_kind, value param_value)
+{
+  CAMLparam3(context, param_kind, param_value);
+  ZSTD_CCtx_setParameter(Zstd_cctx_val(context), Int_val(param_kind), Long_val(param_value));
+  CAMLreturn(Val_unit);
+}
+
 ////////////////////////////////////////////////////////////////////////
 
 void custom_finalize_zstd_dctx_ops(value);
@@ -85,6 +92,13 @@ CAMLprim value caml_create_zstd_dctx_s(value unit)
   Zstd_dctx_val(dctx_val) = dctx;
 
   CAMLreturn(dctx_val);
+}
+
+CAMLprim value caml_create_zstd_set_dctx_param(value context, value param_kind, value param_value)
+{
+  CAMLparam3(context, param_kind, param_value);
+  ZSTD_DCtx_setParameter(Zstd_dctx_val(context), Int_val(param_kind), Long_val(param_value));
+  CAMLreturn(Val_unit);
 }
 
 ////////////////////////////////////////////////////////////////////////

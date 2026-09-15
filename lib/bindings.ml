@@ -7,15 +7,29 @@ external create_compression_context : unit -> compression_context
   = "caml_create_zstd_cctx_s"
 (** [create_compression_context ()] creates a compression context. *)
 
+module Compression_context_parameters = struct
+  let compression_level = 100
+end
+
+external set_compression_context_parameter :
+  compression_context -> int -> int -> unit = "caml_create_zstd_set_cctx_param"
+
 external create_decompression_context : unit -> decompression_context
   = "caml_create_zstd_dctx_s"
 (** [create_decompression_context ()] creates a decompression context. *)
+
+external set_decompression_context_parameter :
+  decompression_context -> int -> int -> unit
+  = "caml_create_zstd_set_dctx_param"
 
 type decompression_stream = external "ZSTD_DStream"
 
 external create_decompression_stream : unit -> decompression_stream
   = "caml_create_zstd_dstream"
 (** [create_decompression_stream ()] creates a decompression stream. *)
+
+external set_decompression_stream_parameter :
+  decompression_stream -> int -> int -> unit = "caml_create_zstd_set_dctx_param"
 
 type dictionary = Bstr.t
 (** A dictionary, as a bigstring. *)

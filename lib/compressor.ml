@@ -3,6 +3,12 @@ module Context = struct
 
   let create () =
     { cctx = Bindings.create_compression_context (); mutex = Mutex.create () }
+
+  let set_compression_level context level =
+    Mutex.protect context.mutex @@ fun () ->
+    Bindings.(
+      set_compression_context_parameter context.cctx
+        Compression_context_parameters.compression_level level)
 end
 
 module Frame = struct
@@ -84,7 +90,13 @@ module Stream = struct
 
   exception Already_closed
 
-  let create () = { context = Context.create (); closed = false }
+  let create ?compression_level () =
+    let context = Context.create () in
+
+    Option.iter (Context.set_compression_level context) compression_level;
+
+    { context; closed = false }
+
   and of_context context = { context; closed = false }
 
   let in_size () = Bindings.get_compression_stream_in_size ()
