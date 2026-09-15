@@ -7,7 +7,8 @@ module Context = struct
     { dctx = Bindings.create_decompression_context (); mutex = Mutex.create () }
 
   let set_size_limit context size =
-    Bindings.set_decompression_context_parameter context.dctx 100 (log2 size)
+    Bindings.set_decompression_context_parameter context.dctx 100
+      (log2 @@ float_of_int size)
 
   let load_dictionary context dict =
     Bindings.load_decompression_dictionary context.dctx dict
@@ -77,7 +78,8 @@ module Stream = struct
 
     Option.iter
       (fun size ->
-        Bindings.set_decompression_stream_parameter dstream 100 @@ log2 size)
+        Bindings.set_decompression_stream_parameter dstream 100
+        @@ log2 @@ float_of_int size)
       size_limit;
 
     Option.iter
@@ -124,7 +126,7 @@ module State = struct
 
   exception Already_closed
 
-  let feed state ~output buffer pos size =
+  let feed ~output state buffer pos size =
     if state.closed then raise Already_closed;
 
     let rec go pos =
@@ -136,7 +138,6 @@ module State = struct
       in
 
       if decompressed > 0 then output state.out_buf 0 decompressed;
-
       if consumed < size then go consumed
     in
 

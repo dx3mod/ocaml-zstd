@@ -93,10 +93,10 @@ module Stream = struct
 
   exception Already_closed
 
-  let create ?dictionary ?compression_level () =
+  let create ?dictionary ?level () =
     let context = Context.create () in
 
-    Option.iter (Context.set_compression_level context) compression_level;
+    Option.iter (Context.set_compression_level context) level;
     Option.iter (Context.load_dictionary context) dictionary;
 
     { context; closed = false }
@@ -132,21 +132,20 @@ module State = struct
 
   let make ?out_buf stream =
     {
-      stream =
-        (match stream with None -> Stream.create () | Some stream -> stream);
+      stream;
       out_buf =
         (match out_buf with
         | None -> Bstr.create @@ Stream.out_size ()
         | Some out_buf -> out_buf);
     }
 
-  let create ?dictionary ?compression_level () =
+  let create ?dictionary ?level () =
     {
-      stream = Stream.create ?dictionary ?compression_level ();
+      stream = Stream.create ?dictionary ?level ();
       out_buf = Bstr.create @@ Stream.out_size ();
     }
 
-  let rec feed state ~output buffer pos size directive =
+  let rec feed ~output state buffer pos size directive =
     let in_buffer = Io_buffer.make ~pos ~size buffer in
     let out_buffer = Io_buffer.make state.out_buf in
 
@@ -164,11 +163,11 @@ module State = struct
           feed state ~output buffer pos size directive
     | `Flush -> ()
 
-  let finish state ~output = feed state ~output Bstr.empty 0 0 `End
+  let finish ~output state = feed state ~output Bstr.empty 0 0 `End
 end
 
-let compress_channel ic oc =
-  let state = State.create () in
+let compress_channel ?dictionary ~level ic oc =
+  let state = State.create ?dictionary ~level () in
   let in_buf = Bstr.create @@ Stream.in_size () in
 
   let output = Out_channel.output_bigarray oc in
