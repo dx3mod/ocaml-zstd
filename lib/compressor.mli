@@ -6,12 +6,19 @@
     All functions accept an optional compression [level] (a Zstandard quality
     setting, typically between [1] and [22]) and may reuse a {!Context.t} across
     calls to avoid re-allocating internal state. A {!Dictionary.t} can be
-    supplied to improve compression of small or repetitive inputs. *)
+    supplied to improve compression of small or repetitive inputs.
+
+    When [?dictionary] is supplied without [?context], a fresh context is
+    allocated internally for that call. Prefer passing a {!Context.t} explicitly
+    when compressing many values with the same dictionary. *)
 
 module Context : sig
   (** A reusable compression context. Reusing one across calls avoids
       re-allocating Zstandard's internal state, which is beneficial when
-      compressing many values in a row. *)
+      compressing many values.
+
+      A context is protected by an internal mutex, so the same {!t} may be
+      safely shared between domains and threads. *)
 
   type t
 
@@ -19,10 +26,15 @@ module Context : sig
   (** [create ()] returns a fresh compression context. *)
 end
 
+(** A Zstandard frame.
+
+    A compressed representation of data. *)
 module Frame : sig
   type t = [ `String of string | `Bigstring of Bstr.t ]
 
   val uncompressed_size : t -> int
+  (** [uncompressed_size frame] returns the decompressed size recorded in the
+      header of the compressed [frame]. *)
 end
 
 (** {1 One-shot API} *)
@@ -60,7 +72,11 @@ val compress_string_into :
   int
 (** [compress_string_into ?context ?dictionary ~level uncompressed_string
      compressed_output_bytes] compresses [uncompressed_string] into
-    [compressed_output_bytes] and returns the number of bytes written. *)
+    [compressed_output_bytes] and returns the number of bytes written.
+
+    The caller is responsible for ensuring that [compressed_output_bytes] is
+    large enough to hold the result; see {!compress_string} for a convenience
+    wrapper that allocates a suitably sized buffer. *)
 
 val compress_string :
   ?context:Context.t ->
@@ -88,6 +104,14 @@ module Stream : sig
   (** [of_context ctx] reuses [ctx] as a streaming state, so that any state it
       has accumulated is carried over. *)
 
+  val in_size : unit -> int
+  (** [in_size ()] is the recommended size, in bytes, for the input buffer
+      passed to {!compress}. *)
+
+  val out_size : unit -> int
+  (** [out_size ()] is the recommended size, in bytes, for the output buffer
+      passed to {!compress}. *)
+
   exception Already_closed
   (** Raised by {!compress} when the stream has already been terminated with
       [`End]. *)
@@ -98,8 +122,8 @@ module Stream : sig
     t ->
     [< `Continue | `End | `Flush ] ->
     (remaining:int * consumed:int * compressed:int)
-  (** [compress ~in_buffer ~out_buffer stream directive] feeds the pending input
-      from [in_buffer] through the compressor, appending output to [out_buffer].
+  (** [compress ~in_buffer ~out_buffer stream directive] feeds the input held in
+      [in_buffer] through the compressor, appending output to [out_buffer].
 
       [directive] controls flushing:
 

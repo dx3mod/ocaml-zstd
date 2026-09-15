@@ -69,6 +69,14 @@ module Stream : sig
   val create : unit -> t
   (** [create ()] returns a fresh streaming state. *)
 
+  val in_size : unit -> int
+  (** [in_size ()] is the recommended size, in bytes, for the input buffer
+      passed to {!decompress}. *)
+
+  val out_size : unit -> int
+  (** [out_size ()] is the recommended size, in bytes, for the output buffer
+      passed to {!decompress}. *)
+
   val decompress :
     in_buffer:Io_buffer.t ->
     out_buffer:Io_buffer.t ->

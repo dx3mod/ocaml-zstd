@@ -87,6 +87,9 @@ module Stream = struct
   let create () = { context = Context.create (); closed = false }
   and of_context context = { context; closed = false }
 
+  let in_size () = Bindings.get_compression_stream_in_size ()
+  and out_size () = Bindings.get_compression_stream_out_size ()
+
   let compress ~in_buffer ~out_buffer stream directive =
     if stream.closed then raise Already_closed;
 

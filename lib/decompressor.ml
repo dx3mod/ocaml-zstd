@@ -70,6 +70,9 @@ module Stream = struct
       mutex = Mutex.create ();
     }
 
+  let in_size () = Bindings.get_decompression_stream_in_size ()
+  and out_size () = Bindings.get_decompression_stream_out_size ()
+
   let decompress ~in_buffer ~out_buffer stream =
     let remaining, consumed, decompressed =
       Mutex.protect stream.mutex @@ fun () ->
