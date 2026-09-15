@@ -2,7 +2,7 @@
 
 A thin and modern OCaml bindings to [Zstandard] compression library.
 
-## Quick start
+<!-- ## Quick start
 
 You can install the `zstd` library using the [OPAM] package manager or any
 other method you prefer. If you are using [Dune], please add the `zstd`
@@ -55,16 +55,17 @@ Use the streaming API when you want to process the input incrementally and
 control how output is flushed.
 
 ```ocaml
-let compress_streaming uncompressed_bigstring =
-  let stream = Zstd.Compressor.Stream.create () in
-  let in_buffer = Zstd.Io_buffer.make uncompressed_bigstring in
-  let out_buffer = Zstd.Io_buffer.make (Bstr.create 4096) in
+let stream = Zstd.Compressor.Stream.create ()
+let out_buffer = Zstd.(Io_buffer.create @@ Compressor.Stream.out_size ())
+
+let compress_streaming buffer off len =
+  let in_buffer = Zstd.Io_buffer.make ~off ~len buffer in
 
   let (~remaining, ~consumed, ~compressed) =
     Zstd.Compressor.Stream.compress ~in_buffer ~out_buffer stream `Flush
   in
 
-  Bstr.sub ~off:0 ~len:compressed out_buffer.buffer
+  Zstd.Io_buffer.sub ~off:0 ~len:compressed out_buffer.buffer
 ```
 
 The returned triple reports how many bytes are still pending in the input buffer, how many were consumed, and how many compressed bytes were written to the output buffer. The directive controls flushing:
@@ -91,7 +92,7 @@ let decompress_streaming compressed_bigstring =
   Bstr.sub ~off:0 ~len:decompressed out_buffer.buffer
 ```
 
-The returned triple reports how many compressed bytes remain in the input compressed buffer, how many were read, and how many were written to the output decompressed buffer.
+The returned triple reports how many compressed bytes remain in the input compressed buffer, how many were read, and how many were written to the output decompressed buffer. -->
 
 ## License
 
