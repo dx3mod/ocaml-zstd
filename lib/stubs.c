@@ -103,6 +103,36 @@ CAMLprim value caml_create_zstd_set_dctx_param(value context, value param_kind, 
 
 ////////////////////////////////////////////////////////////////////////
 
+CAMLprim value caml_create_zstd_load_cdict(value context, value dictionary)
+{
+  CAMLparam2(context, dictionary);
+
+  const size_t result = ZSTD_CCtx_loadDictionary(Zstd_cctx_val(context),
+                                                 String_val(dictionary),
+                                                 caml_string_length(dictionary));
+
+  if (ZSTD_isError(result))
+    caml_failwith(ZSTD_getErrorName(result));
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_create_zstd_load_ddict(value context, value dictionary)
+{
+  CAMLparam2(context, dictionary);
+
+  const size_t result = ZSTD_DCtx_loadDictionary(Zstd_dctx_val(context),
+                                                 String_val(dictionary),
+                                                 caml_string_length(dictionary));
+
+  if (ZSTD_isError(result))
+    caml_failwith(ZSTD_getErrorName(result));
+
+  CAMLreturn(Val_unit);
+}
+
+////////////////////////////////////////////////////////////////////////
+
 CAMLprim value caml_zstd_version(value unit)
 {
   return Val_int(ZSTD_VERSION_NUMBER);

@@ -9,6 +9,9 @@ module Context = struct
     Bindings.(
       set_compression_context_parameter context.cctx
         Compression_context_parameters.compression_level level)
+
+  let load_dictionary context dict =
+    Bindings.load_compression_dictionary context.cctx dict
 end
 
 module Frame = struct
@@ -90,10 +93,11 @@ module Stream = struct
 
   exception Already_closed
 
-  let create ?compression_level () =
+  let create ?dictionary ?compression_level () =
     let context = Context.create () in
 
     Option.iter (Context.set_compression_level context) compression_level;
+    Option.iter (Context.load_dictionary context) dictionary;
 
     { context; closed = false }
 
@@ -126,7 +130,7 @@ end
 module State = struct
   type nonrec t = { stream : Stream.t; out_buf : Bstr.t }
 
-  let make ?out_buf ?stream () =
+  let make ?out_buf stream =
     {
       stream =
         (match stream with None -> Stream.create () | Some stream -> stream);
@@ -136,8 +140,11 @@ module State = struct
         | Some out_buf -> out_buf);
     }
 
-  let create () =
-    { stream = Stream.create (); out_buf = Bstr.create @@ Stream.out_size () }
+  let create ?dictionary ?compression_level () =
+    {
+      stream = Stream.create ?dictionary ?compression_level ();
+      out_buf = Bstr.create @@ Stream.out_size ();
+    }
 
   let rec feed state ~output buffer pos size directive =
     let in_buffer = Io_buffer.make ~pos ~size buffer in

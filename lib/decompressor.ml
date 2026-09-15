@@ -8,6 +8,9 @@ module Context = struct
 
   let set_size_limit context size =
     Bindings.set_decompression_context_parameter context.dctx 100 (log2 size)
+
+  let load_dictionary context dict =
+    Bindings.load_decompression_dictionary context.dctx dict
 end
 
 let decompress_string_into_bytes ?context ?dictionary compressed_string
@@ -69,7 +72,7 @@ let decompress_bigstring ?context ?dictionary ~original_size
 module Stream = struct
   type t = { dstream : Bindings.decompression_stream; mutex : Mutex.t }
 
-  let create ?size_limit () =
+  let create ?dictionary ?size_limit () =
     let dstream = Bindings.create_decompression_stream () in
 
     Option.iter
@@ -77,10 +80,17 @@ module Stream = struct
         Bindings.set_decompression_stream_parameter dstream 100 @@ log2 size)
       size_limit;
 
+    Option.iter
+      (Bindings.load_decompression_dictionary (Obj.magic dstream))
+      dictionary;
+
     { dstream; mutex = Mutex.create () }
 
   let in_size () = Bindings.get_decompression_stream_in_size ()
   and out_size () = Bindings.get_decompression_stream_out_size ()
+
+  let load_dictionary stream dict =
+    Bindings.load_decompression_dictionary (Obj.magic stream.dstream) dict
 
   let decompress ~in_buffer ~out_buffer stream =
     let remaining, consumed, decompressed =
