@@ -81,3 +81,61 @@ module Stream = struct
 
     (~remaining, ~consumed, ~decompressed)
 end
+
+module State = struct
+  type nonrec t = { stream : Stream.t; out_buf : Bstr.t; closed : bool }
+
+  let make ?out_buf ?stream () =
+    {
+      stream =
+        (match stream with None -> Stream.create () | Some stream -> stream);
+      closed = false;
+      out_buf =
+        (match out_buf with
+        | None -> Bstr.create @@ Stream.out_size ()
+        | Some out_buf -> out_buf);
+    }
+
+  let create () =
+    {
+      stream = Stream.create ();
+      out_buf = Bstr.create @@ Stream.out_size ();
+      closed = false;
+    }
+
+  exception Already_closed
+
+  let feed state ~output buffer pos size =
+    if state.closed then raise Already_closed;
+
+    let rec go pos =
+      let in_buffer = Io_buffer.make ~pos ~size buffer in
+      let out_buffer = Io_buffer.make state.out_buf in
+
+      let ~remaining:_, ~consumed, ~decompressed =
+        Stream.decompress ~in_buffer ~out_buffer state.stream
+      in
+
+      if decompressed > 0 then output state.out_buf 0 decompressed;
+
+      if consumed < size then go consumed
+    in
+
+    go pos
+end
+
+let decompress_channel ic oc =
+  let state = State.create () in
+  let in_buf = Bstr.create @@ Stream.in_size () in
+  let output = Out_channel.output_bigarray oc in
+
+  let rec loop () =
+    match In_channel.input_bigarray ic in_buf 0 (Bstr.length in_buf) with
+    | 0 -> ()
+    | length ->
+        State.feed ~output state in_buf 0 length;
+        loop ()
+  in
+
+  loop ();
+  Out_channel.flush oc

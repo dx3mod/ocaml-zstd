@@ -96,7 +96,7 @@ module Stream = struct
     let directive =
       match directive with
       | `Continue -> Bindings.Directive.continue
-      | `Flush -> Bindings.Directive.eend
+      | `Flush -> Bindings.Directive.flush
       | `End ->
           stream.closed <- true;
           Bindings.Directive.eend
@@ -110,3 +110,57 @@ module Stream = struct
 
     (~remaining, ~consumed, ~compressed)
 end
+
+module State = struct
+  type nonrec t = { stream : Stream.t; out_buf : Bstr.t }
+
+  let make ?out_buf ?stream () =
+    {
+      stream =
+        (match stream with None -> Stream.create () | Some stream -> stream);
+      out_buf =
+        (match out_buf with
+        | None -> Bstr.create @@ Stream.out_size ()
+        | Some out_buf -> out_buf);
+    }
+
+  let create () =
+    { stream = Stream.create (); out_buf = Bstr.create @@ Stream.out_size () }
+
+  let rec feed state ~output buffer pos size directive =
+    let in_buffer = Io_buffer.make ~pos ~size buffer in
+    let out_buffer = Io_buffer.make state.out_buf in
+
+    let ~remaining, ~consumed, ~compressed =
+      Stream.compress ~in_buffer ~out_buffer state.stream directive
+    in
+
+    if compressed > 0 then output state.out_buf 0 compressed;
+
+    match directive with
+    | `End ->
+        if remaining <> 0 then feed state ~output buffer pos size directive
+    | `Continue ->
+        if consumed < in_buffer.Io_buffer.size then
+          feed state ~output buffer pos size directive
+    | `Flush -> ()
+
+  let finish state ~output = feed state ~output Bstr.empty 0 0 `End
+end
+
+let compress_channel ic oc =
+  let state = State.create () in
+  let in_buf = Bstr.create @@ Stream.in_size () in
+
+  let output = Out_channel.output_bigarray oc in
+
+  let rec loop () =
+    match In_channel.input_bigarray ic in_buf 0 (Bstr.length in_buf) with
+    | 0 -> State.finish ~output state
+    | length ->
+        State.feed state ~output in_buf 0 length `Continue;
+        loop ()
+  in
+
+  loop ();
+  Out_channel.flush oc

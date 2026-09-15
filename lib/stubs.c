@@ -404,9 +404,6 @@ CAMLprim value caml_zstd_compress_stream2(value context, value in_buffer, value 
     caml_failwith(ZSTD_getErrorName(remaining));
   }
 
-  Store_field(in_buffer, 1, Val_int(input.pos));
-  Store_field(out_buffer, 1, Val_int(output.pos));
-
   tup = caml_alloc_tuple(3);
   initialize_compression_result_tuple(tup, remaining, input.pos, output.pos);
 
@@ -485,9 +482,6 @@ CAMLprim value caml_zstd_decompress_stream(value dstream, value in_buffer, value
   {
     caml_failwith(ZSTD_getErrorName(remaining));
   }
-
-  Store_field(in_buffer, 1, Val_long(input.pos));
-  Store_field(out_buffer, 1, Val_long(output.pos));
 
   tup = caml_alloc_tuple(3);
   initialize_compression_result_tuple(tup, remaining, input.pos, output.pos);
