@@ -24,7 +24,7 @@
   "Zstd, short for Zstandard, is a fast lossless compression algorithm,\ntargeting real-time compression scenarios at zlib-level compression ratio.\nSee http://zstd.net/ for more info.")
  (depends
   (ocaml
-   (>= 4.14.0))
+   (>= 5.5.0))
   dune-configurator
   bstr
   conf-zstd
