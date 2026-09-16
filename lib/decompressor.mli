@@ -131,12 +131,26 @@ module State : sig
       Creates a new decompression stream. *)
 
   exception Already_closed
-  (** Raised when trying to compress a closed stream. *)
+  (** Raised when trying to decompress a closed stream. *)
+
+  exception Truncated_input
+  (** Raised when trying to close a decompression stream with remaining bytes.
+  *)
 
   val feed :
     output:(Bstr.t -> int -> int -> unit) -> t -> Bstr.t -> int -> int -> unit
   (** [feed ~output state buffer position size]
 
       Decompresses the data from [buffer] starting at [position] with [size],
-      and feeds the decompressed result to the [output] function. *)
+      and feeds the decompressed result to the [output] function.
+
+      @raise Already_closed *)
+
+  val finish : t -> unit
+  (** [finish ()]
+
+      Close a decompression stream state.
+
+      @raise Already_closed
+      @raise Truncated_input *)
 end

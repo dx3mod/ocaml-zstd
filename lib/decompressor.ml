@@ -104,13 +104,19 @@ module Stream = struct
 end
 
 module State = struct
-  type nonrec t = { stream : Stream.t; out_buf : Bstr.t; closed : bool }
+  type t = {
+    stream : Stream.t;
+    out_buf : Bstr.t;
+    mutable remaining : int;
+    mutable closed : bool;
+  }
 
   let make ?out_buf ?stream () =
     {
       stream =
         (match stream with None -> Stream.create () | Some stream -> stream);
       closed = false;
+      remaining = 0;
       out_buf =
         (match out_buf with
         | None -> Bstr.create @@ Stream.out_size ()
@@ -122,26 +128,35 @@ module State = struct
       stream = Stream.create ?dictionary ?size_limit ();
       out_buf = Bstr.create @@ Stream.out_size ();
       closed = false;
+      remaining = 0;
     }
 
   exception Already_closed
+  exception Truncated_input
 
   let feed ~output state buffer pos size =
     if state.closed then raise Already_closed;
 
-    let rec go pos =
+    let rec aux pos =
       let in_buffer = Io_buffer.make ~pos ~size buffer in
       let out_buffer = Io_buffer.make state.out_buf in
 
-      let ~remaining:_, ~consumed, ~decompressed =
+      let ~remaining, ~consumed, ~decompressed =
         Stream.decompress ~in_buffer ~out_buffer state.stream
       in
 
+      state.remaining <- remaining;
+
       if decompressed > 0 then output state.out_buf 0 decompressed;
-      if consumed < size then go consumed
+      if consumed < size then aux consumed
     in
 
-    go pos
+    aux pos
+
+  let finish state =
+    if state.closed then raise Already_closed
+    else if state.remaining = 0 then state.closed <- true
+    else raise Truncated_input
 end
 
 let decompress_channel ?dictionary ?size_limit ic oc =
@@ -158,4 +173,5 @@ let decompress_channel ?dictionary ?size_limit ic oc =
   in
 
   loop ();
+  State.finish state;
   Out_channel.flush oc

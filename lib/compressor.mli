@@ -161,7 +161,7 @@ module State : sig
     Bstr.t ->
     int ->
     int ->
-    [< `Continue | `End | `Flush ] ->
+    [< `Continue | `Flush | `End ] ->
     unit
   (** [feed ~output state buffer position size directive]
 

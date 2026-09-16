@@ -109,20 +109,23 @@ module Stream = struct
   let compress ~in_buffer ~out_buffer stream directive =
     if stream.closed then raise Already_closed;
 
-    let directive =
+    let raw_directive =
       match directive with
       | `Continue -> Bindings.Directive.continue
       | `Flush -> Bindings.Directive.flush
-      | `End ->
-          stream.closed <- true;
-          Bindings.Directive.eend
+      | `End -> Bindings.Directive.eend
     in
 
     let remaining, consumed, compressed =
       Mutex.protect stream.context.mutex @@ fun () ->
       Bindings.compress_stream2 stream.context.cctx in_buffer out_buffer
-        directive
+        raw_directive
     in
+
+    begin match directive with
+    | `End when remaining = 0 -> stream.closed <- true
+    | `End | `Continue | `Flush -> ()
+    end;
 
     (~remaining, ~consumed, ~compressed)
 end
@@ -156,14 +159,17 @@ module State = struct
     if compressed > 0 then output state.out_buf 0 compressed;
 
     match directive with
-    | `End ->
-        if remaining <> 0 then feed state ~output buffer pos size directive
     | `Continue ->
-        if consumed < in_buffer.Io_buffer.size then
-          feed state ~output buffer pos size directive
-    | `Flush -> ()
+        if consumed < size then
+          feed ~output state buffer consumed size directive
+    | `Flush ->
+        if remaining <> 0 || consumed < size then
+          feed ~output state buffer consumed size directive
+    | `End ->
+        if remaining <> 0 || consumed < size then
+          feed ~output state buffer consumed size directive
 
-  let finish ~output state = feed state ~output Bstr.empty 0 0 `End
+  let finish ~output state = feed ~output state Bstr.empty 0 0 `End
 end
 
 let compress_channel ?dictionary ~level ic oc =
