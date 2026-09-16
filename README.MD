@@ -36,16 +36,12 @@ let source = "Contrary to popular belief, Lorem Ipsum is not simply random text.
 
 let compressed = Zstd.Compressor.compress_string ~level:3 source
 
-let size = Zstd.Compressor.Frame.uncompressed_size (`String compressed)
-
 let decompressed =
-  Zstd.Decompressor.decompress_string ~original_size:size compressed
+  Zstd.Decompressor.decompress_string compressed
 ```
 
 The `level` is a Zstandard quality setting between `1` (fastest) and `22`
-(best ratio); `3` is a good default. `Frame.uncompressed_size` reads the
-original size straight from the frame, so you do not have to track it
-yourself.
+(best ratio); `3` is a good default.
 
 Bigstring equivalents are available under the same names:
 `compress_bigstring` and `decompress_bigstring`. If you already have a

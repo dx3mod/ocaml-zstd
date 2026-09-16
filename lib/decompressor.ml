@@ -32,8 +32,10 @@ let decompress_string_into_bytes ?context ?dictionary compressed_string
         Context.(create ()).dctx dictionary compressed_string
         uncompressed_output_bytes
 
-let decompress_string ?context ?dictionary ~original_size compressed_string =
-  let uncompressed_output_bytes = Bytes.create original_size in
+let decompress_string ?context ?dictionary compressed_string =
+  let uncompressed_output_bytes =
+    Bytes.create @@ Bindings.get_decompression_size_of_string compressed_string
+  in
 
   decompress_string_into_bytes ?context ?dictionary compressed_string
     uncompressed_output_bytes
@@ -60,9 +62,11 @@ let decompress_bigstring_into ?context ?dictionary compressed_bigstring
         Context.(create ()).dctx dictionary compressed_bigstring
         uncompressed_output_bigstring
 
-let decompress_bigstring ?context ?dictionary ~original_size
-    compressed_bigstring =
-  let uncompressed_output_bigstring = Bstr.create original_size in
+let decompress_bigstring ?context ?dictionary compressed_bigstring =
+  let uncompressed_output_bigstring =
+    Bstr.create
+    @@ Bindings.get_decompression_size_of_bigstring compressed_bigstring
+  in
 
   decompress_bigstring_into ?context ?dictionary compressed_bigstring
     uncompressed_output_bigstring

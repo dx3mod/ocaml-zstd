@@ -21,26 +21,17 @@ end
 (** {1 One-shot decompressing} *)
 
 val decompress_bigstring :
-  ?context:Context.t ->
-  ?dictionary:Dictionary.t ->
-  original_size:int ->
-  Bstr.t ->
-  Bstr.t
-(** [decompress_bigstring ?context ?dictionary ~original_size bigstring]
+  ?context:Context.t -> ?dictionary:Dictionary.t -> Bstr.t -> Bstr.t
+(** [decompress_bigstring ?context ?dictionary bigstring]
 
-    Decompresses [bigstring] and returns the uncompressed data of original size
-    as a new bigstring. *)
+    Decompresses [bigstring] and returns the uncompressed data as a new
+    bigstring. *)
 
 val decompress_string :
-  ?context:Context.t ->
-  ?dictionary:Bstr.t ->
-  original_size:int ->
-  string ->
-  string
-(** [decompress_string ?context ?dictionary ~original_size string]
+  ?context:Context.t -> ?dictionary:Bstr.t -> string -> string
+(** [decompress_string ?context ?dictionary string]
 
-    Decompresses [string] and returns the uncompressed data of original size as
-    a new string. *)
+    Decompresses [string] and returns the uncompressed data as a new string. *)
 
 val decompress_channel :
   ?dictionary:Dictionary.t ->

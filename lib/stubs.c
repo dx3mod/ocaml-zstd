@@ -151,6 +151,12 @@ CAMLprim value caml_get_frame_string_content_size(value compressed_string)
   const size_t result =
       ZSTD_getFrameContentSize(String_val(compressed_string), caml_string_length(compressed_string));
 
+  if (result == ZSTD_CONTENTSIZE_ERROR)
+    caml_failwith("get_frame_content_size: corrupt frame");
+
+  if (result == ZSTD_CONTENTSIZE_UNKNOWN)
+    caml_failwith("get_frame_content_size: frame does not carry its content size");
+
   CAMLreturn(Val_long(result));
 }
 
@@ -160,6 +166,12 @@ CAMLprim value caml_get_frame_bigstring_content_size(value compressed_bigstring)
 
   const size_t result =
       ZSTD_getFrameContentSize(Caml_ba_data_val(compressed_bigstring), Caml_ba_array_val(compressed_bigstring)->dim[0]);
+
+  if (result == ZSTD_CONTENTSIZE_ERROR)
+    caml_failwith("get_frame_content_size: corrupt frame");
+
+  if (result == ZSTD_CONTENTSIZE_UNKNOWN)
+    caml_failwith("get_frame_content_size: frame does not carry its content size");
 
   CAMLreturn(Val_long(result));
 }
