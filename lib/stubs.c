@@ -108,8 +108,8 @@ CAMLprim value caml_create_zstd_load_cdict(value context, value dictionary)
   CAMLparam2(context, dictionary);
 
   const size_t result = ZSTD_CCtx_loadDictionary(Zstd_cctx_val(context),
-                                                 String_val(dictionary),
-                                                 caml_string_length(dictionary));
+                                                 Caml_ba_data_val(dictionary),
+                                                 Caml_ba_array_val(dictionary)->dim[0]);
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));
@@ -122,8 +122,8 @@ CAMLprim value caml_create_zstd_load_ddict(value context, value dictionary)
   CAMLparam2(context, dictionary);
 
   const size_t result = ZSTD_DCtx_loadDictionary(Zstd_dctx_val(context),
-                                                 String_val(dictionary),
-                                                 caml_string_length(dictionary));
+                                                 Caml_ba_data_val(dictionary),
+                                                 Caml_ba_array_val(dictionary)->dim[0]);
 
   if (ZSTD_isError(result))
     caml_failwith(ZSTD_getErrorName(result));

@@ -1,4 +1,4 @@
-(** Zstandard (zstd) compression and decompression library. 
+(** Zstandard (zstd) compression and decompression library.
 
     Zstandard is a fast, lossless compression algorithm developed by Facebook.
     This library provides OCaml bindings to the reference C implementation. *)

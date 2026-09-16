@@ -14,7 +14,7 @@ end
 external set_compression_context_parameter :
   compression_context -> int -> int -> unit = "caml_create_zstd_set_cctx_param"
 
-external load_compression_dictionary : compression_context -> string -> unit
+external load_compression_dictionary : compression_context -> Bstr.t -> unit
   = "caml_create_zstd_load_cdict"
 
 external create_decompression_context : unit -> decompression_context

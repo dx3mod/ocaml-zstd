@@ -16,7 +16,7 @@ module Context : sig
 
       Sets the compression level to [context]. *)
 
-  val load_dictionary : t -> Dictionary.string -> unit
+  val load_dictionary : t -> Dictionary.t -> unit
   (** [load_dictionary context dictionary]
 
       Loads [dictionary] into [context]. *)
@@ -52,11 +52,7 @@ val compress_string :
 (** [compress_string ?context ?dictionary ~level uncompressed_bytes] *)
 
 val compress_channel :
-  ?dictionary:Dictionary.string ->
-  level:int ->
-  in_channel ->
-  out_channel ->
-  unit
+  ?dictionary:Dictionary.t -> level:int -> in_channel -> out_channel -> unit
 (** [compress_string ?dictionary ~level ic oc] *)
 
 (** {2 Into buffer} *)
@@ -89,7 +85,7 @@ module Stream : sig
 
   (** {2 Constructions} *)
 
-  val create : ?dictionary:string -> ?level:int -> unit -> t
+  val create : ?dictionary:Dictionary.t -> ?level:int -> unit -> t
   (** [create ?dictionary ?level ()]
 
       Creates a new compression stream. *)
@@ -148,7 +144,7 @@ module State : sig
       Creates a compression stream state from an existing compression [stream].
       If [out_buf] is omitted, a default output buffer is allocated. *)
 
-  val create : ?dictionary:string -> ?level:int -> unit -> t
+  val create : ?dictionary:Dictionary.t -> ?level:int -> unit -> t
   (** [create ?dictionary ?level ()]
 
       Creates a new compression stream. *)
