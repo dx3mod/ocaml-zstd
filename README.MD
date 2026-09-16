@@ -4,7 +4,7 @@
 
 A thin and modern OCaml binding to the [Zstandard] compression library. It provides common one-shot and streaming APIs from the reference C implementation, exposing them through a small and idiomatic interface.
 
-## Features
+**Features**
 
 - One-shot and streaming compression and decompression of `string` and `Bstr.t`
   bigstrings.

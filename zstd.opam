@@ -15,6 +15,7 @@ bug-reports: "https://github.com/ygrek/ocaml-zstd/issues"
 depends: [
   "dune" {>= "3.6"}
   "ocaml" {>= "4.14.0"}
+  "dune-configurator"
   "bstr"
   "conf-zstd"
   "alcotest" {with-test}
