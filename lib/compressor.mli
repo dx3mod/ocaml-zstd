@@ -1,25 +1,20 @@
 (** Zstandard compression module.
 
-    Provides one-shot and streaming APIs for data compression. *)
+    The module offers both one-shot and streaming APIs for compressing data. *)
 
-(** Compression context. *)
+(** A reusable compression context. *)
 module Context : sig
   type t
 
   val create : unit -> t
-  (** [create ()]
-
-      Creates a new compression context. *)
+  (** [create ()] allocates a new compression context. *)
 
   val set_compression_level : t -> int -> unit
-  (** [set_compression_level context level]
-
-      Sets the compression level to [context]. *)
+  (** [set_compression_level context level] sets the compression level for
+      [context]. *)
 
   val load_dictionary : t -> Dictionary.t -> unit
-  (** [load_dictionary context dictionary]
-
-      Loads [dictionary] into [context]. *)
+  (** [load_dictionary context dictionary] loads [dictionary] into [context]. *)
 end
 
 (** Metadata for compressed data. *)
@@ -27,10 +22,8 @@ module Frame : sig
   type t = [ `Bigstring of Bstr.t | `String of string ]
 
   val uncompressed_size : t -> int
-  (** [uncompressed_size frame]
-
-      Returns the original uncompressed size of the data represented by [frame].
-  *)
+  (** [uncompressed_size frame] returns the original uncompressed size of the
+      data in [frame]. *)
 end
 
 (** {1 One-shot compressing} *)
@@ -41,7 +34,9 @@ val compress_bigstring :
   level:int ->
   Bstr.t ->
   Bstr.t
-(** [compress_bigstring ?context ?dictionary ~level uncompressed_bytes] *)
+(** [compress_bigstring ?context ?dictionary ~level bigstring]
+
+    Compresses [bigstring] and returns a compressed data as a new bigstring. *)
 
 val compress_string :
   ?context:Context.t ->
@@ -49,11 +44,15 @@ val compress_string :
   level:int ->
   string ->
   string
-(** [compress_string ?context ?dictionary ~level uncompressed_bytes] *)
+(** [compress_string ?context ?dictionary ~level string]
+
+    Compresses [string] and returns a compressed data as a new string.*)
 
 val compress_channel :
   ?dictionary:Dictionary.t -> level:int -> in_channel -> out_channel -> unit
-(** [compress_string ?dictionary ~level ic oc] *)
+(** [compress_string ?dictionary ~level ic oc]
+
+    Compresses data from [ic] channel to [oc] channel. *)
 
 (** {2 Into buffer} *)
 
@@ -64,8 +63,11 @@ val compress_bigstring_into :
   Bstr.t ->
   Bstr.t ->
   int
-(** [compress_bigstring_into ?context ?dictionary ~level uncompressed_bytes
-     compressed_destination_buffer] *)
+(** [compress_bigstring_into ?context ?dictionary ~level src dst]
+
+    Compresses [src] bigstring into [dst] bigstring buffer.
+
+    @return A number of bytes written. *)
 
 val compress_string_into :
   ?context:Context.t ->
@@ -74,12 +76,15 @@ val compress_string_into :
   string ->
   bytes ->
   int
-(** [compress_string_into ?context ?dictionary ~level uncompressed_bytes
-     compressed_destination_buffer] *)
+(** [compress_string_into ?context ?dictionary ~level src dst]
+
+    Compresses [src] string into [dst] bytes buffer.
+
+    @return A number of bytes written *)
 
 (** {1 Incremental compressing} *)
 
-(** A compression stream module for incremental compression of data chunks. *)
+(** The compression stream module for incremental compression. *)
 module Stream : sig
   type t
 
@@ -93,11 +98,12 @@ module Stream : sig
   val of_context : Context.t -> t
   (** [of_context context]
 
-      Creates a compression stream from the existing compression context. *)
+      Creates a compression stream from the existing compression [context]. *)
 
   (** {2 Compression} *)
 
   exception Already_closed
+  (** Raised when trying to compress a closed stream. *)
 
   val compress :
     in_buffer:Io_buffer.t ->
@@ -123,14 +129,12 @@ module Stream : sig
   (** {2 Buffers sizes} *)
 
   val in_size : unit -> int
-  (** [in_size ()]
-
-      Returns the recommended size for the input compression buffer. *)
+  (** [in_size ()] returns the recommended size for the input compression
+      buffer. *)
 
   val out_size : unit -> int
-  (** [out_size ()]
-
-      Returns the recommended size for the output compression buffer. *)
+  (** [out_size ()] returns the recommended size for the output compression
+      buffer. *)
 end
 
 (** A compression stream state for feeding bytes during streaming compression.
@@ -161,8 +165,8 @@ module State : sig
     unit
   (** [feed ~output state buffer position size directive]
 
-      Compresses the data in [buffer] starting at [position] with length [size],
-      and feeds the compressed result to the [output] function.
+      Compresses the data from [buffer] starting at [position] with [size], and
+      feeds the compressed result to the [output] function.
 
       The [directive] controls the flushing behavior of the stream. *)
 

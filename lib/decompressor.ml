@@ -73,6 +73,9 @@ let decompress_bigstring ?context ?dictionary ~original_size
 module Stream = struct
   type t = { dstream : Bindings.decompression_stream; mutex : Mutex.t }
 
+  let load_dictionary (dstream : Bindings.decompression_stream) dict =
+    Bindings.load_decompression_dictionary (Obj.magic dstream) dict
+
   let create ?dictionary ?size_limit () =
     let dstream = Bindings.create_decompression_stream () in
 
@@ -82,17 +85,14 @@ module Stream = struct
         @@ log2 @@ float_of_int size)
       size_limit;
 
-    Option.iter
-      (Bindings.load_decompression_dictionary (Obj.magic dstream))
-      dictionary;
+    Option.iter (load_dictionary dstream) dictionary;
 
     { dstream; mutex = Mutex.create () }
 
   let in_size () = Bindings.get_decompression_stream_in_size ()
   and out_size () = Bindings.get_decompression_stream_out_size ()
 
-  let load_dictionary stream dict =
-    Bindings.load_decompression_dictionary (Obj.magic stream.dstream) dict
+  (* let load_dictionary stream dict = load_dictionary stream.dstream dict *)
 
   let decompress ~in_buffer ~out_buffer stream =
     let remaining, consumed, decompressed =
@@ -117,9 +117,9 @@ module State = struct
         | Some out_buf -> out_buf);
     }
 
-  let create () =
+  let create ?dictionary ?size_limit () =
     {
-      stream = Stream.create ();
+      stream = Stream.create ?dictionary ?size_limit ();
       out_buf = Bstr.create @@ Stream.out_size ();
       closed = false;
     }
@@ -144,8 +144,8 @@ module State = struct
     go pos
 end
 
-let decompress_channel ic oc =
-  let state = State.create () in
+let decompress_channel ?dictionary ?size_limit ic oc =
+  let state = State.create ?dictionary ?size_limit () in
   let in_buf = Bstr.create @@ Stream.in_size () in
   let output = Out_channel.output_bigarray oc in
 

@@ -13,9 +13,13 @@ end
 
 external set_compression_context_parameter :
   compression_context -> int -> int -> unit = "caml_create_zstd_set_cctx_param"
+(** [set_compression_context_parameter context param value] sets [param] to
+    [value] on [context]. *)
 
 external load_compression_dictionary : compression_context -> Bstr.t -> unit
   = "caml_create_zstd_load_cdict"
+(** [load_compression_dictionary context dictionary] loads [dictionary] into
+    [context]. *)
 
 external create_decompression_context : unit -> decompression_context
   = "caml_create_zstd_dctx_s"
@@ -24,9 +28,13 @@ external create_decompression_context : unit -> decompression_context
 external set_decompression_context_parameter :
   decompression_context -> int -> int -> unit
   = "caml_create_zstd_set_dctx_param"
+(** [set_decompression_context_parameter context param value] sets [param] to
+    [value] on [context]. *)
 
-external load_decompression_dictionary : decompression_context -> string -> unit
+external load_decompression_dictionary : decompression_context -> Bstr.t -> unit
   = "caml_create_zstd_load_ddict"
+(** [load_decompression_dictionary context dictionary] loads [dictionary] into
+    [context]. *)
 
 type decompression_stream = external "ZSTD_DCtx"
 
@@ -36,6 +44,8 @@ external create_decompression_stream : unit -> decompression_stream
 
 external set_decompression_stream_parameter :
   decompression_stream -> int -> int -> unit = "caml_create_zstd_set_dctx_param"
+(** [set_decompression_stream_parameter stream param value] sets [param] to
+    [value] on [stream]. *)
 
 type dictionary = Bstr.t
 (** A dictionary, as a bigstring. *)
@@ -49,21 +59,33 @@ external compress_bound : int -> int = "caml_zstd_compress_bound"
 
 external get_decompression_size_of_string : string -> int
   = "caml_get_frame_string_content_size"
+(** [get_decompression_size_of_string compressed] returns the decompressed size
+    of [compressed]. *)
 
 external get_decompression_size_of_bigstring : Bstr.t -> int
   = "caml_get_frame_bigstring_content_size"
+(** [get_decompression_size_of_bigstring compressed] returns the decompressed
+    size of [compressed]. *)
 
 external get_decompression_stream_out_size : unit -> int
   = "caml_zstd_decompression_stream_out_size"
+(** [get_decompression_stream_out_size ()] returns the recommended output buffer
+    size for decompression streams. *)
 
 external get_decompression_stream_in_size : unit -> int
   = "caml_zstd_decompression_stream_in_size"
+(** [get_decompression_stream_in_size ()] returns the recommended input buffer
+    size for decompression streams. *)
 
 external get_compression_stream_out_size : unit -> int
   = "caml_zstd_compression_stream_out_size"
+(** [get_compression_stream_out_size ()] returns the recommended output buffer
+    size for compression streams. *)
 
 external get_compression_stream_in_size : unit -> int
   = "caml_zstd_compression_stream_in_size"
+(** [get_compression_stream_in_size ()] returns the recommended input buffer
+    size for compression streams. *)
 
 external compress_bigstring : Bstr.t -> Bstr.t -> int -> int
   = "caml_zstd_compress_bigstring"

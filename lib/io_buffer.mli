@@ -1,5 +1,5 @@
-(** An I/O buffer module that buffers data chunks for incremental
-    compression/decompression. *)
+(** An I/O buffer module that stores a view of data chunks for later compression
+    and decompression. *)
 
 type t = private { buffer : Bstr.t; position : int; size : int }
 

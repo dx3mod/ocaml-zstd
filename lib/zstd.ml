@@ -3,12 +3,15 @@
     Zstandard is a fast, lossless compression algorithm developed by Facebook.
     This library provides OCaml bindings to the reference C implementation. *)
 
+(** {2 Compression and decompression} *)
+
 module Compressor = Compressor
 module Decompressor = Decompressor
-module Dictionary = Dictionary
-module Io_buffer = Io_buffer
 
 (** {2 Miscellaneous} *)
+
+module Io_buffer = Io_buffer
+module Dictionary = Dictionary
 
 (** Returns the version of the linked libzstd C library as a triple
     [(major, minor, patch)].*)
