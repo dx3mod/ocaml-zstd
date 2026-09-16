@@ -45,6 +45,11 @@ pre-allocated destination buffer, the `*_into` variants
 (`compress_string_into`, `decompress_bigstring_into`, ...) avoid the extra
 allocation.
 
+Important: streaming compression does not embed the frame’s content size in the header. 
+Consequently, we cannot use `Zstd.Decompressor.decompress_string`, because it relies 
+on the content-size field. We must instead call the “into buffer” API with a destination
+ buffer large enough to hold the decompressed data.
+
 ### Reusing contexts
 
 Compression and decompression contexts hold Zstandard's internal state.
