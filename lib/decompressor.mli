@@ -137,12 +137,15 @@ module State : sig
   (** Raised when trying to close a decompression stream with remaining bytes.
   *)
 
-  val feed :
-    output:(Bstr.t -> int -> int -> unit) -> t -> Bstr.t -> int -> int -> unit
-  (** [feed ~output state buffer position size]
+  (** {2 Compression} *)
+
+  type pusher = Bstr.t -> int -> int -> unit
+
+  val feed : push:pusher -> t -> Bstr.t -> int -> int -> unit
+  (** [feed ~push state buffer position size]
 
       Decompresses the data from [buffer] starting at [position] with [size],
-      and feeds the decompressed result to the [output] function.
+      and feeds the decompressed result to the [push] function.
 
       @raise Already_closed *)
 

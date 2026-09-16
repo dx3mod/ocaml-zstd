@@ -134,7 +134,9 @@ module State = struct
   exception Already_closed
   exception Truncated_input
 
-  let feed ~output state buffer pos size =
+  type pusher = Bstr.t -> int -> int -> unit
+
+  let feed ~push state buffer pos size =
     if state.closed then raise Already_closed;
 
     let rec aux pos =
@@ -147,7 +149,7 @@ module State = struct
 
       state.remaining <- remaining;
 
-      if decompressed > 0 then output state.out_buf 0 decompressed;
+      if decompressed > 0 then push state.out_buf 0 decompressed;
       if consumed < size then aux consumed
     in
 
@@ -168,7 +170,7 @@ let decompress_channel ?dictionary ?size_limit ic oc =
     match In_channel.input_bigarray ic in_buf 0 (Bstr.length in_buf) with
     | 0 -> ()
     | length ->
-        State.feed ~output state in_buf 0 length;
+        State.feed ~push:output state in_buf 0 length;
         loop ()
   in
 

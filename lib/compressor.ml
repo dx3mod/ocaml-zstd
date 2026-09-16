@@ -131,7 +131,7 @@ module Stream = struct
 end
 
 module State = struct
-  type nonrec t = { stream : Stream.t; out_buf : Bstr.t }
+  type t = { stream : Stream.t; out_buf : Bstr.t }
 
   let make ?out_buf stream =
     {
@@ -148,7 +148,9 @@ module State = struct
       out_buf = Bstr.create @@ Stream.out_size ();
     }
 
-  let rec feed ~output state buffer pos size directive =
+  type pusher = Bstr.t -> int -> int -> unit
+
+  let rec feed ~push state buffer pos size directive =
     let in_buffer = Io_buffer.make ~pos ~size buffer in
     let out_buffer = Io_buffer.make state.out_buf in
 
@@ -156,20 +158,19 @@ module State = struct
       Stream.compress ~in_buffer ~out_buffer state.stream directive
     in
 
-    if compressed > 0 then output state.out_buf 0 compressed;
+    if compressed > 0 then push state.out_buf 0 compressed;
 
     match directive with
     | `Continue ->
-        if consumed < size then
-          feed ~output state buffer consumed size directive
+        if consumed < size then feed ~push state buffer consumed size directive
     | `Flush ->
         if remaining <> 0 || consumed < size then
-          feed ~output state buffer consumed size directive
+          feed ~push state buffer consumed size directive
     | `End ->
         if remaining <> 0 || consumed < size then
-          feed ~output state buffer consumed size directive
+          feed ~push state buffer consumed size directive
 
-  let finish ~output state = feed ~output state Bstr.empty 0 0 `End
+  let finish ~push state = feed ~push state Bstr.empty 0 0 `End
 end
 
 let compress_channel ?dictionary ~level ic oc =
@@ -180,9 +181,9 @@ let compress_channel ?dictionary ~level ic oc =
 
   let rec loop () =
     match In_channel.input_bigarray ic in_buf 0 (Bstr.length in_buf) with
-    | 0 -> State.finish ~output state
+    | 0 -> State.finish ~push:output state
     | length ->
-        State.feed state ~output in_buf 0 length `Continue;
+        State.feed state ~push:output in_buf 0 length `Continue;
         loop ()
   in
 

@@ -155,23 +155,25 @@ module State : sig
 
   (** {2 Compression} *)
 
+  type pusher = Bstr.t -> int -> int -> unit
+
   val feed :
-    output:(Bstr.t -> int -> int -> unit) ->
+    push:pusher ->
     t ->
     Bstr.t ->
     int ->
     int ->
     [< `Continue | `Flush | `End ] ->
     unit
-  (** [feed ~output state buffer position size directive]
+  (** [feed ~push state buffer position size directive]
 
       Compresses the data from [buffer] starting at [position] with [size], and
-      feeds the compressed result to the [output] function.
+      feeds the compressed result to the [push] function.
 
       The [directive] controls the flushing behavior of the stream. *)
 
-  val finish : output:(Bstr.t -> int -> int -> unit) -> t -> unit
-  (** [finish ~output state]
+  val finish : push:pusher -> t -> unit
+  (** [finish ~push state]
 
       Is similar to {!feed} function, but constrained to the [`End] directive.
   *)
