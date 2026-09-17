@@ -2,7 +2,7 @@
   <img src="https://i.ibb.co/LXfsM8S3/logos-001-2.png" width="250">
 </p>
 
-A thin and modern OCaml binding to the [Zstandard] compression library. It provides common one-shot and streaming APIs from the reference C implementation, exposing them through a small and idiomatic interface.
+A thin and modern OCaml bindings to the [Zstandard] compression library. It provides common one-shot and streaming APIs from the reference C implementation, exposing them through a small and idiomatic interface.
 
 **Features**
 
@@ -12,15 +12,18 @@ A thin and modern OCaml binding to the [Zstandard] compression library. It provi
 - A low-level `Stream` API where you drive the buffers yourself, and a
   high-level `State` API that pushes output through a callback.
 
+
+This project is a hard fork of the unmaintained `zstd` bindings. The original package provided only limited functionality and did not cover even the basic features. It has been completely rewritten and reworked, and is distributed as a separate package because the original maintainers do not accept pull requests.
+
 ## Installation
 
-You can install the `zstd` library using the [OPAM] package manager or any
-other method you prefer. If you are using [Dune], please add the `zstd`
+You can install the `ozstd` library using the [OPAM] package manager or any
+other method you prefer. If you are using [Dune], please add the `ozstd`
 library to your dependencies.
 
 ## In use
 
-Everything lives in two modules: `Zstd.Compressor` and `Zstd.Decompressor`.
+Everything lives in two modules: `Ozstd.Compressor` and `Ozstd.Decompressor`.
 Both offer one-shot and streaming APIs.
 
 ### One-shot compression and decompression
@@ -30,10 +33,10 @@ For data that fits in memory, there are one-shot functions:
 ```ocaml
 let source = "Contrary to popular belief, Lorem Ipsum is not simply random text."
 
-let compressed = Zstd.Compressor.compress_string ~level:3 source
+let compressed = Ozstd.Compressor.compress_string ~level:3 source
 
 let decompressed =
-  Zstd.Decompressor.decompress_string compressed
+  Ozstd.Decompressor.decompress_string compressed
 ```
 
 The `level` is a Zstandard quality setting between `1` (fastest) and `22`
@@ -46,7 +49,7 @@ pre-allocated destination buffer, the `*_into` variants
 allocation.
 
 Important: streaming compression does not embed the frame’s content size in the header. 
-Consequently, we cannot use `Zstd.Decompressor.decompress_string`, because it relies 
+Consequently, we cannot use `Ozstd.Decompressor.decompress_string`, because it relies 
 on the content-size field. We must instead call the “into buffer” API with a destination
  buffer large enough to hold the decompressed data.
 
@@ -57,17 +60,17 @@ Creating one per call is wasteful; create a context once and reuse it:
 
 ```ocaml
 let compress_all inputs =
-  let context = Zstd.Compressor.Context.create () in
-  List.map (Zstd.Compressor.compress_string ~context ~level:3) inputs
+  let context = Ozstd.Compressor.Context.create () in
+  List.map (Ozstd.Compressor.compress_string ~context ~level:3) inputs
 ```
 
 Contexts are mutex-guarded, so they can be shared across threads. A dictionary
 loaded onto a context applies to every call that uses it:
 
 ```ocaml
-let context = Zstd.Compressor.Context.create () in
-Zstd.Compressor.Context.load_dictionary context dictionary;
-let compressed = Zstd.Compressor.compress_string ~context ~level:3 payload
+let context = Ozstd.Compressor.Context.create () in
+Ozstd.Compressor.Context.load_dictionary context dictionary;
+let compressed = Ozstd.Compressor.compress_string ~context ~level:3 payload
 ```
 
 ### Streaming (the `State` API)
@@ -78,14 +81,14 @@ output chunks as they're ready:
 
 ```ocaml
 let compress_sequence_into_channel seq oc =
-  let state = Zstd.Compressor.State.create () in
+  let state = Ozstd.Compressor.State.create () in
   let output = Out_channel.output_bigarray oc in
   let aux chunk =
-    Zstd.Compressor.State.feed
+    Ozstd.Compressor.State.feed
       ~push:output state chunk 0 (Bstr.length chunk) `Continue
   in
   Seq.iter aux seq;
-  Zstd.Compressor.State.finish ~push:output state
+  Ozstd.Compressor.State.finish ~push:output state
 ```
 
 The `directive` argument (`Continue`, `Flush`, `End`) decides how much the
@@ -95,14 +98,14 @@ Decompression looks the same; it just has no directive:
 
 ```ocaml
 let decompress_sequence_into_channel seq oc =
-  let state = Zstd.Decompressor.State.create () in
+  let state = Ozstd.Decompressor.State.create () in
   let output = Out_channel.output_bigarray oc in
   let aux chunk =
-    Zstd.Decompressor.State.feed
+    Ozstd.Decompressor.State.feed
       ~push:output state chunk 0 (Bstr.length chunk)
   in
   Seq.iter aux seq;
-  Zstd.Decompressor.State.finish state
+  Ozstd.Decompressor.State.finish state
 ```
 
 ### Streaming (the `Stream` API)
@@ -112,18 +115,18 @@ yourself. You give it input and output `Io_buffer`s and it tells you how much
 work it did:
 
 ```ocaml
-let stream = Zstd.Decompressor.Stream.create ()
+let stream = Ozstd.Decompressor.Stream.create ()
 
-let in_buffer = Zstd.Io_buffer.make compressed_buffer
-and out_buffer = Zstd.Io_buffer.create @@ Zstd.Decompressor.Stream.out_size ()
+let in_buffer = Ozstd.Io_buffer.make compressed_buffer
+and out_buffer = Ozstd.Io_buffer.create @@ Ozstd.Decompressor.Stream.out_size ()
 
 let (~remaining, ~consumed, ~decompressed) =
-  Zstd.Decompressor.Stream.decompress ~in_buffer ~out_buffer stream
+  Ozstd.Decompressor.Stream.decompress ~in_buffer ~out_buffer stream
 ```
 
 The triple tells you how many bytes remain in the input, how many were read,
 and how many were written to the output. Keep calling, refilling `in_buffer`
-and emptying `out_buffer`, until it's all gone. `Zstd.Compressor.Stream.compress`
+and emptying `out_buffer`, until it's all gone. `Ozstd.Compressor.Stream.compress`
 works the same way.
 
 ## Limitations and partial bindings coverage
@@ -136,34 +139,34 @@ These bindings cover a solid chunk of the [Zstandard] C API, not all of it.
   without a pre-created context and/or dictionary; plus into-buffer variants.
 - Streaming compression/decompression through `Stream` (via `Io_buffer`) and
   the higher-level `State` modules, and channel helpers built on top of them.
-- Reusable `Context`s (wrapped `ZSTD_CCtx`/`ZSTD_DCtx`), mutex-guarded so they
+- Reusable `Context`s (wrapped `Ozstd_CCtx`/`Ozstd_DCtx`), mutex-guarded so they
   can be shared across threads (though not in parallel).
 - Loading user-provided dictionaries into contexts
-  (`ZSTD_*CCtx_loadDictionary`), and reading the stored frame size
-  (`ZSTD_getFrameContentSize`).
+  (`Ozstd_*CCtx_loadDictionary`), and reading the stored frame size
+  (`Ozstd_getFrameContentSize`).
 
 **What is not covered**
 
 - **Advanced parameters** – only the compression `level` and a decompression
-  `size_limit` are exposed. Tuning knobs such as `ZSTD_c_windowLog`,
-  `ZSTD_c_chainLog`, `ZSTD_c_hashLog`, `ZSTD_c_targetLength`, long-distance
+  `size_limit` are exposed. Tuning knobs such as `Ozstd_c_windowLog`,
+  `Ozstd_c_chainLog`, `Ozstd_c_hashLog`, `Ozstd_c_targetLength`, long-distance
   matching, and writing checksums or content-size flags are not available.
 - **Dictionary training** – dictionaries can be *used* but not *created*: no
   binding for the `ZDICT_*` API, so `Dictionary.t` is just a raw `Bstr.t` and
   there is no way to train a dictionary from a sample set.
-- **Compiled dictionaries and pledged sizes** – `ZSTD_CDict`/`ZSTD_DDict`,
-  `ZSTD_CCtx_setPledgedSrcSize`, and `ZSTD_compress2` are not wrapped; raw or
-  experimental APIs (`ZSTD_compressSequences`, `ZSTD_getSequences`, block
+- **Compiled dictionaries and pledged sizes** – `Ozstd_CDict`/`Ozstd_DDict`,
+  `Ozstd_CCtx_setPledgedSrcSize`, and `Ozstd_compress2` are not wrapped; raw or
+  experimental APIs (`Ozstd_compressSequences`, `Ozstd_getSequences`, block
   operations, ...) are missing too.
-- **Multithreading** – the `ZSTD_*MT`/worker-based parallel compression API is
+- **Multithreading** – the `Ozstd_*MT`/worker-based parallel compression API is
   not bound at all; everything runs single-threaded.
 
 ## License
 
-The project is licensed under [the BSD3 License](./LICENSE). Just use it and
+The project is licensed under [MIT](./LICENSE). Just use it and
 enjoy yourself without fear. We are always open to pull requests!
 
-[Zstandard]: https://github.com/facebook/zstd
+[Zstandard]: https://github.com/facebook/Ozstd
 
 [OPAM]: https://opam.ocaml.org/
 [Dune]: https://dune.build

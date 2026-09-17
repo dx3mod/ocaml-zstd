@@ -1,5 +1,5 @@
 (library
- (public_name zstd)
+ (public_name ozstd)
  (libraries bstr)
  (foreign_stubs
   (language c)
