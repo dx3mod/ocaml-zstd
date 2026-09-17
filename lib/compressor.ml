@@ -91,8 +91,6 @@ let compress_string ?context ?dictionary ~level uncompressed_string =
 module Stream = struct
   type t = { context : Context.t; mutable closed : bool }
 
-  exception Already_closed
-
   let create ?dictionary ?level () =
     let context = Context.create () in
 
@@ -106,7 +104,9 @@ module Stream = struct
   let in_size () = Bindings.get_compression_stream_in_size ()
   and out_size () = Bindings.get_compression_stream_out_size ()
 
-  let compress ~in_buffer ~out_buffer stream directive =
+  exception Already_closed
+
+  let compress ~in_slice ~out_slice stream directive =
     if stream.closed then raise Already_closed;
 
     let raw_directive =
@@ -118,7 +118,7 @@ module Stream = struct
 
     let remaining, consumed, compressed =
       Mutex.protect stream.context.mutex @@ fun () ->
-      Bindings.compress_stream2 stream.context.cctx in_buffer out_buffer
+      Bindings.compress_stream2 stream.context.cctx in_slice out_slice
         raw_directive
     in
 
@@ -128,6 +128,9 @@ module Stream = struct
     end;
 
     (~remaining, ~consumed, ~compressed)
+
+  let close stream =
+    if stream.closed then raise Already_closed else stream.closed <- true
 end
 
 module State = struct
@@ -148,42 +151,40 @@ module State = struct
       out_buf = Bstr.create @@ Stream.out_size ();
     }
 
-  type pusher = Bstr.t -> int -> int -> unit
+  let feed state slice directive =
+    let rec aux in_slice =
+      let out_slice = Slice_bstr.make state.out_buf in
 
-  let rec feed ~push state buffer pos size directive =
-    let in_buffer = Io_buffer.make ~pos ~size buffer in
-    let out_buffer = Io_buffer.make state.out_buf in
+      let ~remaining, ~consumed, ~compressed =
+        Stream.compress ~in_slice ~out_slice state.stream directive
+      in
 
-    let ~remaining, ~consumed, ~compressed =
-      Stream.compress ~in_buffer ~out_buffer state.stream directive
+      let in_slice_len = Slice_bstr.length in_slice in
+
+      if remaining <> 0 || (consumed > 0 && consumed < in_slice_len) then
+        aux
+        @@ Slice_bstr.sub ~off:consumed ~len:(in_slice_len - consumed) in_slice
+      else Slice_bstr.sub ~off:0 ~len:compressed out_slice
     in
 
-    if compressed > 0 then push state.out_buf 0 compressed;
+    aux slice
 
-    match directive with
-    | `Continue ->
-        if consumed < size then feed ~push state buffer consumed size directive
-    | `Flush ->
-        if remaining <> 0 || consumed < size then
-          feed ~push state buffer consumed size directive
-    | `End ->
-        if remaining <> 0 || consumed < size then
-          feed ~push state buffer consumed size directive
-
-  let finish ~push state = feed ~push state Bstr.empty 0 0 `End
+  let finish state = feed state Slice_bstr.empty `End
 end
 
 let compress_channel ?dictionary ~level ic oc =
   let state = State.create ?dictionary ~level () in
   let in_buf = Bstr.create @@ Stream.in_size () in
 
-  let output = Out_channel.output_bigarray oc in
+  let output Slice.{ buf; off; len } =
+    Out_channel.output_bigarray oc buf off len
+  in
 
   let rec loop () =
     match In_channel.input_bigarray ic in_buf 0 (Bstr.length in_buf) with
-    | 0 -> State.finish ~push:output state
-    | length ->
-        State.feed state ~push:output in_buf 0 length `Continue;
+    | 0 -> State.finish state |> output
+    | len ->
+        State.feed state Slice_bstr.(make ~len in_buf) `Continue |> output;
         loop ()
   in
 

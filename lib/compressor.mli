@@ -88,7 +88,8 @@ val compress_string_into :
 module Stream : sig
   type t
 
-  (** {2 Constructions} *)
+  exception Already_closed
+  (** Raised when trying to compress a closed stream. *)
 
   val create : ?dictionary:Dictionary.t -> ?level:int -> unit -> t
   (** [create ?dictionary ?level ()]
@@ -100,14 +101,18 @@ module Stream : sig
 
       Creates a compression stream from the existing compression [context]. *)
 
+  val close : t -> unit
+  (** [finish ()]
+
+      Close the compression stream.
+
+      @raise Already_closed *)
+
   (** {2 Compression} *)
 
-  exception Already_closed
-  (** Raised when trying to compress a closed stream. *)
-
   val compress :
-    in_buffer:Io_buffer.t ->
-    out_buffer:Io_buffer.t ->
+    in_slice:Slice_bstr.t ->
+    out_slice:Slice_bstr.t ->
     t ->
     [< `Continue | `End | `Flush ] ->
     (remaining:int * consumed:int * compressed:int)
@@ -155,26 +160,15 @@ module State : sig
 
   (** {2 Compression} *)
 
-  type pusher = Bstr.t -> int -> int -> unit
+  val feed : t -> Slice_bstr.t -> [< `Continue | `Flush | `End ] -> Slice_bstr.t
+  (** [feed state slice directive]
 
-  val feed :
-    push:pusher ->
-    t ->
-    Bstr.t ->
-    int ->
-    int ->
-    [< `Continue | `Flush | `End ] ->
-    unit
-  (** [feed ~push state buffer position size directive]
-
-      Compresses the data from [buffer] starting at [position] with [size], and
-      feeds the compressed result to the [push] function.
-
+      Compresses [slice] and provides the compressed data as an output slice.
       The [directive] controls the flushing behavior of the stream. *)
 
-  val finish : push:pusher -> t -> unit
-  (** [finish ~push state]
+  val finish : t -> Slice_bstr.t
+  (** [finish state]
 
-      Is similar to {!feed} function, but constrained to the [`End] directive.
-  *)
+      Is similar to {!feed} function, but constrained to the [`End] directive
+      and close the stream. *)
 end

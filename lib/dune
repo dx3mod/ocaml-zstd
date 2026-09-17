@@ -1,6 +1,6 @@
 (library
  (public_name ozstd)
- (libraries bstr)
+ (libraries bstr slice slice.bstr)
  (foreign_stubs
   (language c)
   (flags

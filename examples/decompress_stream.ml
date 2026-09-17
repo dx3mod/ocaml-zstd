@@ -4,7 +4,7 @@ let compressed_buffer =
 
 let stream = Ozstd.Decompressor.Stream.create ()
 
-let in_buffer = Ozstd.Io_buffer.make compressed_buffer
-and out_buffer = Ozstd.Io_buffer.create @@ Ozstd.Decompressor.Stream.out_size ()
+let in_slice = Slice_bstr.make compressed_buffer
+and out_slice = Slice_bstr.create @@ Ozstd.Decompressor.Stream.out_size ()
 
-let _step = Ozstd.Decompressor.Stream.decompress ~in_buffer ~out_buffer stream
+let _step = Ozstd.Decompressor.Stream.decompress ~in_slice ~out_slice stream

@@ -431,6 +431,11 @@ CAMLprim value caml_zstd_decompress_bigstring_with_context_and_dictionary(value 
 // STREAM COMPRESS
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#define Slice_data_val(V) Caml_ba_data_val(Field(V, 0))
+#define Slice_offset_val(V) Long_val(Field(V, 1))
+#define Slice_length_val(V) Long_val(Field(V, 2))
+#define Slice_size_val(V) (Slice_offset_val(V) + Slice_length_val(V))
+
 static void initialize_compression_result_tuple(value tup, size_t remaining, size_t input_position, size_t output_position)
 {
   Store_field(tup, 0, Val_long(remaining));
@@ -438,20 +443,20 @@ static void initialize_compression_result_tuple(value tup, size_t remaining, siz
   Store_field(tup, 2, Val_long(output_position));
 }
 
-CAMLprim value caml_zstd_compress_stream2(value context, value in_buffer, value out_buffer, value directive)
+CAMLprim value caml_zstd_compress_stream2(value context, value in_slice, value out_slice, value directive)
 {
-  CAMLparam4(context, in_buffer, out_buffer, directive);
+  CAMLparam4(context, in_slice, out_slice, directive);
   CAMLlocal1(tup);
 
   ZSTD_inBuffer input = {
-      .src = Caml_ba_data_val(Field(in_buffer, 0)),
-      .size = Long_val(Field(in_buffer, 2)),
-      .pos = Long_val(Field(in_buffer, 1))};
+      .src = Slice_data_val(in_slice),
+      .size = Slice_size_val(in_slice),
+      .pos = Slice_offset_val(in_slice)};
 
   ZSTD_outBuffer output = {
-      .dst = Caml_ba_data_val(Field(out_buffer, 0)),
-      .size = Long_val(Field(out_buffer, 2)),
-      .pos = Long_val(Field(out_buffer, 1))};
+      .dst = Slice_data_val(out_slice),
+      .size = Slice_size_val(out_slice),
+      .pos = Slice_offset_val(out_slice)};
 
   size_t remaining = ZSTD_compressStream2(Zstd_cctx_val(context), &output, &input, Int_val(directive));
 
@@ -517,20 +522,20 @@ CAMLprim value caml_create_zstd_dstream(value unit)
   CAMLreturn(dstream_val);
 }
 
-CAMLprim value caml_zstd_decompress_stream(value dstream, value in_buffer, value out_buffer)
+CAMLprim value caml_zstd_decompress_stream(value dstream, value in_slice, value out_slice)
 {
-  CAMLparam3(dstream, in_buffer, out_buffer);
+  CAMLparam3(dstream, in_slice, out_slice);
   CAMLlocal1(tup);
 
   ZSTD_inBuffer input = {
-      .src = Caml_ba_data_val(Field(in_buffer, 0)),
-      .size = Long_val(Field(in_buffer, 2)),
-      .pos = Long_val(Field(in_buffer, 1))};
+      .src = Slice_data_val(in_slice),
+      .size = Slice_size_val(in_slice),
+      .pos = Slice_offset_val(in_slice)};
 
   ZSTD_outBuffer output = {
-      .dst = Caml_ba_data_val(Field(out_buffer, 0)),
-      .size = Long_val(Field(out_buffer, 2)),
-      .pos = Long_val(Field(out_buffer, 1))};
+      .dst = Slice_data_val(out_slice),
+      .size = Slice_size_val(out_slice),
+      .pos = Slice_offset_val(out_slice)};
 
   size_t remaining = ZSTD_decompressStream(Zstd_dstream_val(dstream), &output, &input);
 

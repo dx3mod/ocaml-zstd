@@ -75,7 +75,11 @@ let decompress_bigstring ?context ?dictionary compressed_bigstring =
   uncompressed_output_bigstring
 
 module Stream = struct
-  type t = { dstream : Bindings.decompression_stream; mutex : Mutex.t }
+  type t = {
+    dstream : Bindings.decompression_stream;
+    mutex : Mutex.t;
+    mutable closed : bool;
+  }
 
   let load_dictionary (dstream : Bindings.decompression_stream) dict =
     Bindings.load_decompression_dictionary (Obj.magic dstream) dict
@@ -91,36 +95,34 @@ module Stream = struct
 
     Option.iter (load_dictionary dstream) dictionary;
 
-    { dstream; mutex = Mutex.create () }
+    { dstream; mutex = Mutex.create (); closed = false }
 
   let in_size () = Bindings.get_decompression_stream_in_size ()
   and out_size () = Bindings.get_decompression_stream_out_size ()
 
-  (* let load_dictionary stream dict = load_dictionary stream.dstream dict *)
+  exception Already_closed
 
-  let decompress ~in_buffer ~out_buffer stream =
+  let decompress ~in_slice ~out_slice stream =
+    if stream.closed then raise Already_closed;
+
     let remaining, consumed, decompressed =
       Mutex.protect stream.mutex @@ fun () ->
-      Bindings.decompress_stream stream.dstream in_buffer out_buffer
+      Bindings.decompress_stream stream.dstream in_slice out_slice
     in
 
     (~remaining, ~consumed, ~decompressed)
+
+  let close stream =
+    if stream.closed then raise Already_closed else stream.closed <- true
 end
 
 module State = struct
-  type t = {
-    stream : Stream.t;
-    out_buf : Bstr.t;
-    mutable remaining : int;
-    mutable closed : bool;
-  }
+  type t = { stream : Stream.t; out_buf : Bstr.t }
 
   let make ?out_buf ?stream () =
     {
       stream =
         (match stream with None -> Stream.create () | Some stream -> stream);
-      closed = false;
-      remaining = 0;
       out_buf =
         (match out_buf with
         | None -> Bstr.create @@ Stream.out_size ()
@@ -131,53 +133,43 @@ module State = struct
     {
       stream = Stream.create ?dictionary ?size_limit ();
       out_buf = Bstr.create @@ Stream.out_size ();
-      closed = false;
-      remaining = 0;
     }
 
-  exception Already_closed
-  exception Truncated_input
-
-  type pusher = Bstr.t -> int -> int -> unit
-
-  let feed ~push state buffer pos size =
-    if state.closed then raise Already_closed;
-
-    let rec aux pos =
-      let in_buffer = Io_buffer.make ~pos ~size buffer in
-      let out_buffer = Io_buffer.make state.out_buf in
+  let feed state slice =
+    let rec aux in_slice =
+      let out_slice = Slice_bstr.make state.out_buf in
 
       let ~remaining, ~consumed, ~decompressed =
-        Stream.decompress ~in_buffer ~out_buffer state.stream
+        Stream.decompress ~in_slice ~out_slice state.stream
       in
 
-      state.remaining <- remaining;
+      let in_slice_len = Slice_bstr.length in_slice in
 
-      if decompressed > 0 then push state.out_buf 0 decompressed;
-      if consumed > 0 && consumed < Io_buffer.length in_buffer then aux consumed
+      if (remaining > 0 || consumed > 0) && consumed < in_slice_len then
+        aux
+        @@ Slice_bstr.sub ~off:consumed ~len:(in_slice_len - consumed) in_slice
+      else Slice_bstr.sub ~off:0 ~len:decompressed out_slice
     in
 
-    aux pos
-
-  let finish state =
-    if state.closed then raise Already_closed
-    else if state.remaining = 0 then state.closed <- true
-    else raise Truncated_input
+    aux slice
 end
 
 let decompress_channel ?dictionary ?size_limit ic oc =
   let state = State.create ?dictionary ?size_limit () in
   let in_buf = Bstr.create @@ Stream.in_size () in
-  let output = Out_channel.output_bigarray oc in
 
   let rec loop () =
     match In_channel.input_bigarray ic in_buf 0 (Bstr.length in_buf) with
     | 0 -> ()
-    | length ->
-        State.feed ~push:output state in_buf 0 length;
+    | len ->
+        let Slice.{ buf; off; len } =
+          State.feed state Slice_bstr.(make ~off:0 ~len in_buf)
+        in
+
+        Out_channel.output_bigarray oc buf off len;
         loop ()
   in
 
   loop ();
-  State.finish state;
+  (* State.finish state; *)
   Out_channel.flush oc

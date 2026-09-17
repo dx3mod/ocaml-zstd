@@ -170,13 +170,13 @@ module Directive = struct
 end
 
 external compress_stream2 :
-  compression_context -> Io_buffer.t -> Io_buffer.t -> int -> int * int * int
+  compression_context -> Slice_bstr.t -> Slice_bstr.t -> int -> int * int * int
   = "caml_zstd_compress_stream2"
-(** [compress_stream2 context in_buffer out_buffer directive] feeds [in_buffer]
-    through the streaming compressor into [out_buffer] with [directive]. *)
+(** [compress_stream2 context in_slice out_slice directive] feeds [in_slice]
+    through the streaming compressor into [out_slice] with [directive]. *)
 
 external decompress_stream :
-  decompression_stream -> Io_buffer.t -> Io_buffer.t -> int * int * int
+  decompression_stream -> Slice_bstr.t -> Slice_bstr.t -> int * int * int
   = "caml_zstd_decompress_stream"
-(** [decompress_stream stream in_buffer out_buffer] feeds [in_buffer] through
-    the streaming decompressor into [out_buffer]. *)
+(** [decompress_stream stream in_slice out_slice] feeds [in_slice] through the
+    streaming decompressor into [out_slice]. *)

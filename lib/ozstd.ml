@@ -10,7 +10,6 @@ module Decompressor = Decompressor
 
 (** {2 Miscellaneous} *)
 
-module Io_buffer = Io_buffer
 module Dictionary = Dictionary
 
 (** Returns the version of the linked libzstd C library as a triple

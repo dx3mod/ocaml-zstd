@@ -67,31 +67,38 @@ val decompress_string_into_bytes :
 module Stream : sig
   type t
 
-  (** {2 Constructions} *)
+  exception Already_closed
+  (** Raised when trying to decompress a closed stream. *)
 
   val create : ?dictionary:Dictionary.t -> ?size_limit:int -> unit -> t
   (** [create ?dictionary ?size_limit ()]
 
       Creates a new decompression stream. *)
 
+  val close : t -> unit
+  (** [finish ()]
+
+      Close a decompression stream.
+
+      @raise Already_closed *)
+
   (** {2 Decompression} *)
 
   val decompress :
-    in_buffer:Io_buffer.t ->
-    out_buffer:Io_buffer.t ->
+    in_slice:Slice_bstr.t ->
+    out_slice:Slice_bstr.t ->
     t ->
     (remaining:int * consumed:int * decompressed:int)
+  (** [decompress ~in_slice ~out_slice stream]
 
-  (** [compress ~in_buffer ~out_buffer stream mode]
-
-      Decompresses bytes from [in_buffer] into [out_buffer] buffer.
+      Decompresses bytes from [in_slice] into [out_slice] buffer.
 
       @return
         A labeled triple [(~remaining, ~consumed, ~decompressed)] where:
         - [remaining] is the number of bytes remaining in the source;
-        - [consumed] is the number of bytes consumed from [in_buffer];
+        - [consumed] is the number of bytes consumed from [in_slice];
         - [decompressed] is the number of decompressed bytes written to
-          [out_buffer]. *)
+          [out_slice]. *)
 
   (** {2 Buffers sizes} *)
 
@@ -110,41 +117,24 @@ module State : sig
   type t
 
   val make : ?out_buf:Bstr.t -> ?stream:Stream.t -> unit -> t
-  (** [make ?out_buf stream]
+  (** [make ?out_buf ?stream stream]
 
       Creates a decompression stream state from an existing decompression
       [stream]. If [out_buf] is omitted, a default output buffer is allocated.
   *)
 
   val create : ?dictionary:Dictionary.t -> ?size_limit:int -> unit -> t
-  (** [create l ()]
+  (** [create ?dictionary ?size_limit ()]
 
       Creates a new decompression stream. *)
 
-  exception Already_closed
-  (** Raised when trying to decompress a closed stream. *)
-
-  exception Truncated_input
-  (** Raised when trying to close a decompression stream with remaining bytes.
-  *)
-
   (** {2 Compression} *)
 
-  type pusher = Bstr.t -> int -> int -> unit
+  val feed : t -> Slice_bstr.t -> Slice_bstr.t
+  (** [feed state slice]
 
-  val feed : push:pusher -> t -> Bstr.t -> int -> int -> unit
-  (** [feed ~push state buffer position size]
-
-      Decompresses the data from [buffer] starting at [position] with [size],
-      and feeds the decompressed result to the [push] function.
+      Decompresses [slice] and provides the decompressed data as an output
+      slice.
 
       @raise Already_closed *)
-
-  val finish : t -> unit
-  (** [finish ()]
-
-      Close a decompression stream state.
-
-      @raise Already_closed
-      @raise Truncated_input *)
 end

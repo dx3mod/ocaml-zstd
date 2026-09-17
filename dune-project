@@ -21,12 +21,13 @@
  (name ozstd)
  (synopsis "A thin, modern OCaml binding to Zstandard")
  (description
-  "A thin and modern OCaml binding to the Zstandard compression library. It provides common one-shot and streaming APIs from the reference C implementation, exposing them through a small and idiomatic interface.")
+  "A small, modern OCaml binding to Zstandard. It wraps the common one-shot and streaming C APIs in a simple, idiomatic interface")
  (depends
   (ocaml
    (>= 5.5.0))
   dune-configurator
   bstr
+  slice
   conf-zstd
   (alcotest :with-test))
  (tags (clib:zstd)))
