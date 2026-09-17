@@ -13,6 +13,7 @@ bug-reports: "https://github.com/dx3mod/ozstd/issues"
 depends: [
   "dune" {>= "3.6"}
   "ocaml" {>= "5.5.0"}
+  "dune-configurator"
   "bstr"
   "conf-zstd"
   "alcotest" {with-test}

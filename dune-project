@@ -25,6 +25,7 @@
  (depends
   (ocaml
    (>= 5.5.0))
+  dune-configurator
   bstr
   conf-zstd
   (alcotest :with-test))
