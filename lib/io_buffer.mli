@@ -1,7 +1,7 @@
 (** An I/O buffer module that stores a view of data chunks for later compression
     and decompression. *)
 
-type t = private { buffer : Bstr.t; position : int; size : int }
+type t = private { buffer : Bstr.t; pos : int; size : int }
 
 val create : int -> t
 (** [create size]
