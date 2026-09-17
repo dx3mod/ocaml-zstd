@@ -101,11 +101,11 @@ let stream = Ozstd.Decompressor.Stream.create ()
 let in_slice = Slice_bstr.make compressed_buffer
 and out_slice = Slice_bstr.create (Ozstd.Decompressor.Stream.out_size ())
 
-let { remaining; consumed; decompressed } =
+let (~remaining, ~consumed, ~decompressed) =
   Ozstd.Decompressor.Stream.decompress ~in_slice ~out_slice stream
 ```
 
-The record reports bytes remaining in the input, bytes read, and bytes written to the output. Keep calling it, refilling the input buffer and emptying the output buffer, until all data is processed. `Ozstd.Compressor.Stream.compress` works the same way.
+The triple reports bytes remaining in the input, bytes read, and bytes written to the output. Keep calling it, refilling the input buffer and emptying the output buffer, until all data is processed. `Ozstd.Compressor.Stream.compress` works the same way.
 
 ## Limitations
 

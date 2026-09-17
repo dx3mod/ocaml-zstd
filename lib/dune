@@ -4,9 +4,11 @@
  (foreign_stubs
   (language c)
   (flags
+   :standard
    (:include c_flags.sexp))
   (names stubs))
  (c_library_flags
+  :standard
   (:include c_library_flags.sexp)))
 
 (rule
