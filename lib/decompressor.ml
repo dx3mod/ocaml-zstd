@@ -154,7 +154,7 @@ module State = struct
       state.remaining <- remaining;
 
       if decompressed > 0 then push state.out_buf 0 decompressed;
-      if consumed < size then aux consumed
+      if consumed > 0 && consumed < Io_buffer.length in_buffer then aux consumed
     in
 
     aux pos
