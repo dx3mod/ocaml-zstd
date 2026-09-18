@@ -10,8 +10,6 @@ A small, modern OCaml binding to [Zstandard]. It wraps the common one-shot and s
 - Reusable compression and decompression contexts.
 - Low-level `Stream` API for manual buffers, and high-level `State` API for slice handling.
 
-This is a hard fork of the unmaintained `zstd` OCaml bindings. It has been fully rewritten and is released separately because the original maintainers do not merge pull requests.
-
 ## Installation
 
 Install `ozstd` with [OPAM] or another method. If you use [Dune], add `ozstd` to your dependencies.
