@@ -102,15 +102,21 @@ module Stream = struct
 
   exception Already_closed
 
-  let decompress ~in_slice ~out_slice stream =
+  let[@inline] decompress_intf ~in_slice ~out_slice stream f =
     if stream.closed then raise Already_closed;
 
     let remaining, consumed, decompressed =
       Mutex.protect stream.mutex @@ fun () ->
-      Bindings.decompress_stream stream.dstream in_slice out_slice
+      f stream.dstream in_slice out_slice
     in
 
     (~remaining, ~consumed, ~decompressed)
+
+  let decompress ~in_slice ~out_slice stream =
+    decompress_intf ~in_slice ~out_slice stream Bindings.decompress_stream
+
+  let decompress_bytes ~in_slice ~out_slice stream =
+    decompress_intf ~in_slice ~out_slice stream (fun _ _ _ -> (0, 0, 0))
 
   let close stream =
     if stream.closed then raise Already_closed else stream.closed <- true

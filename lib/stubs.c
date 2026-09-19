@@ -432,8 +432,11 @@ CAMLprim value caml_zstd_decompress_bigstring_with_context_and_dictionary(value 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define Slice_data_val(V) Caml_ba_data_val(Field(V, 0))
+#define Slice_bytes_val(V) Bytes_val(Field(V, 0))
+
 #define Slice_offset_val(V) Long_val(Field(V, 1))
 #define Slice_length_val(V) Long_val(Field(V, 2))
+
 #define Slice_size_val(V) (Slice_offset_val(V) + Slice_length_val(V))
 
 static void initialize_compression_result_tuple(value tup, size_t remaining, size_t input_position, size_t output_position)
@@ -537,12 +540,40 @@ CAMLprim value caml_zstd_decompress_stream(value dstream, value in_slice, value 
       .size = Slice_size_val(out_slice),
       .pos = Slice_offset_val(out_slice)};
 
-  size_t remaining = ZSTD_decompressStream(Zstd_dstream_val(dstream), &output, &input);
+  ZSTD_DStream *const stream = Zstd_dstream_val(dstream);
+
+  caml_enter_blocking_section();
+  const size_t remaining = ZSTD_decompressStream(stream, &output, &input);
+  caml_leave_blocking_section();
 
   if (ZSTD_isError(remaining))
-  {
     caml_failwith(ZSTD_getErrorName(remaining));
-  }
+
+  tup = caml_alloc_tuple(3);
+  initialize_compression_result_tuple(tup, remaining, input.pos, output.pos);
+
+  CAMLreturn(tup);
+}
+
+CAMLprim value caml_zstd_decompress_stream_bytes(value dstream, value in_slice, value out_slice)
+{
+  CAMLparam3(dstream, in_slice, out_slice);
+  CAMLlocal1(tup);
+
+  ZSTD_inBuffer input = {
+      .src = Slice_bytes_val(in_slice),
+      .size = Slice_size_val(in_slice),
+      .pos = Slice_offset_val(in_slice)};
+
+  ZSTD_outBuffer output = {
+      .dst = Slice_bytes_val(out_slice),
+      .size = Slice_size_val(out_slice),
+      .pos = Slice_offset_val(out_slice)};
+
+  const size_t remaining = ZSTD_decompressStream(Zstd_dstream_val(dstream), &output, &input);
+
+  if (ZSTD_isError(remaining))
+    caml_failwith(ZSTD_getErrorName(remaining));
 
   tup = caml_alloc_tuple(3);
   initialize_compression_result_tuple(tup, remaining, input.pos, output.pos);

@@ -180,3 +180,8 @@ external decompress_stream :
   = "caml_zstd_decompress_stream"
 (** [decompress_stream stream in_slice out_slice] feeds [in_slice] through the
     streaming decompressor into [out_slice]. *)
+
+external decompress_stream_bytes :
+  decompression_stream -> Slice_bytes.t -> Slice_bytes.t -> int * int * int
+  = "caml_zstd_decompress_stream_bytes"
+(** [decompress_stream_bytes stream in_slice out_slice] *)

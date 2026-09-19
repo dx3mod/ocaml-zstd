@@ -100,6 +100,12 @@ module Stream : sig
         - [decompressed] is the number of decompressed bytes written to
           [out_slice]. *)
 
+  val decompress_bytes :
+    in_slice:Slice_bytes.t ->
+    out_slice:Slice_bytes.t ->
+    t ->
+    (remaining:int * consumed:int * decompressed:int)
+
   (** {2 Buffers sizes} *)
 
   val in_size : unit -> int
