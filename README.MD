@@ -16,11 +16,7 @@ Install `ozstd` with [OPAM] or another method. If you use [Dune], add `ozstd` to
 
 ## In use
 
-Everything is in `Ozstd.Compressor` and `Ozstd.Decompressor`.
-
 ### One-shot compression and decompression
-
-For data that fits in memory:
 
 ```ocaml
 let source = "Contrary to popular belief, Lorem Ipsum is not simply random text."
@@ -35,19 +31,11 @@ let decompressed =
 
 Bigstring versions use the same names: `compress_bigstring` and `decompress_bigstring`. The `*_into` variants (`compress_string_into`, `decompress_bigstring_into`, ...) write into a preallocated destination buffer.
 
-Note: streaming compression does not embed the frame content size. So `Ozstd.Decompressor.decompress_string` will not work for it. Use an “into buffer” API with a destination large enough for the decompressed data.
+Note: streaming compression does not embed the frame content size, so `decompress_string` will not work for it. Use an “into buffer” API with a destination large enough for the decompressed data.
 
 ### Reusing contexts
 
-Contexts hold Zstandard’s internal state. Create one once and reuse it:
-
-```ocaml
-let compress_all inputs =
-  let context = Ozstd.Compressor.Context.create () in
-  List.map (Ozstd.Compressor.compress_string ~context ~level:3) inputs
-```
-
-Contexts are mutex-guarded, so they can be shared across threads. A dictionary loaded onto a context applies to every call using it:
+Contexts hold Zstandard’s internal state, are mutex-guarded (so they can be shared across threads), and can carry a dictionary:
 
 ```ocaml
 let compress_all inputs =
@@ -56,9 +44,9 @@ let compress_all inputs =
   List.map (Ozstd.Compressor.compress_string ~context ~level:3) inputs
 ```
 
-### Streaming: the `State` API
+### Streaming the `State` API
 
-Use this for data that does not fit in memory or arrives in pieces. `State` is the high-level API: feed it input slices and emit output slices.
+For data that does not fit in memory or arrives in pieces. Feed it input slices and emit output slices:
 
 ```ocaml
 let compress_sequence_into_channel seq oc =
@@ -89,9 +77,9 @@ let decompress_sequence_into_channel seq oc =
   Seq.iter aux seq
 ```
 
-### Streaming: the `Stream` API
+### Streaming the `Stream` API
 
-`Stream` is the lower-level API. You supply the buffers yourself, and it reports how much work it did.
+You supply the buffers yourself, and it reports how much work it did:
 
 ```ocaml
 let stream = Ozstd.Decompressor.Stream.create ()
@@ -105,17 +93,17 @@ let (~remaining, ~consumed, ~decompressed) =
 
 The triple reports bytes remaining in the input, bytes read, and bytes written to the output. Keep calling it, refilling the input buffer and emptying the output buffer, until all data is processed. `Ozstd.Compressor.Stream.compress` works the same way.
 
-`Slice_bstr` slices are bigstring based. If you prefer plain `bytes`, the same API is available as `Stream.compress_bytes` and `Stream.decompress_bytes`, which take `Slice_bytes.t` slices with an identical interface:
+`Slice_bstr` slices are bigstring-based. If you prefer plain `bytes`, the same API is available as `Stream.compress_bytes` and `Stream.decompress_bytes`, which take `Slice_bytes.t` slices with an identical interface:
 
 ```ocaml
-let stream = Ozstd.Decompressor.Stream.create ()
-
 let in_slice = Slice_bytes.make compressed_bytes
 and out_slice = Slice_bytes.create (Ozstd.Decompressor.Stream.out_size ())
 
 let (~remaining, ~consumed, ~decompressed) =
   Ozstd.Decompressor.Stream.decompress_bytes ~in_slice ~out_slice stream
 ```
+
+Note: bigstrings do not block the OCaml runtime while the C binding runs, but `bytes` and `string` buffers do. Prefer the bigstring (`Slice_bstr`) variants in multithreaded programs that mix OCaml work with compression.
 
 ## Limitations
 
