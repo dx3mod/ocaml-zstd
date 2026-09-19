@@ -105,6 +105,18 @@ let (~remaining, ~consumed, ~decompressed) =
 
 The triple reports bytes remaining in the input, bytes read, and bytes written to the output. Keep calling it, refilling the input buffer and emptying the output buffer, until all data is processed. `Ozstd.Compressor.Stream.compress` works the same way.
 
+`Slice_bstr` slices are bigstring based. If you prefer plain `bytes`, the same API is available as `Stream.compress_bytes` and `Stream.decompress_bytes`, which take `Slice_bytes.t` slices with an identical interface:
+
+```ocaml
+let stream = Ozstd.Decompressor.Stream.create ()
+
+let in_slice = Slice_bytes.make compressed_bytes
+and out_slice = Slice_bytes.create (Ozstd.Decompressor.Stream.out_size ())
+
+let (~remaining, ~consumed, ~decompressed) =
+  Ozstd.Decompressor.Stream.decompress_bytes ~in_slice ~out_slice stream
+```
+
 ## Limitations
 
 These bindings cover a large part of the [Zstandard] C API, but not all of it.
@@ -112,7 +124,7 @@ These bindings cover a large part of the [Zstandard] C API, but not all of it.
 **Covered**
 
 - One-shot compression/decompression of `string` and `Bstr.t`, with optional context and/or dictionary, plus into-buffer variants.
-- Streaming compression/decompression via `Stream` and the higher-level `State` modules.
+- Streaming compression/decompression via `Stream`, with both bigstring (`Slice_bstr`) and `bytes` (`Slice_bytes`) buffer variants, and the higher-level `State` module.
 - Reusable, mutex-guarded `Context`s.
 - Loading user dictionaries and reading stored frame size.
 

@@ -131,6 +131,14 @@ module Stream : sig
 
       @raise Already_closed If the stream was [`End]'ed. *)
 
+  val compress_bytes :
+    in_slice:Slice_bytes.t ->
+    out_slice:Slice_bytes.t ->
+    t ->
+    [< `Continue | `End | `Flush ] ->
+    (remaining:int * consumed:int * compressed:int)
+  (** [compress_bytes ~in_buffer ~out_buffer stream mode] *)
+
   (** {2 Buffers sizes} *)
 
   val in_size : unit -> int

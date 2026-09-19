@@ -461,12 +461,41 @@ CAMLprim value caml_zstd_compress_stream2(value context, value in_slice, value o
       .size = Slice_size_val(out_slice),
       .pos = Slice_offset_val(out_slice)};
 
-  size_t remaining = ZSTD_compressStream2(Zstd_cctx_val(context), &output, &input, Int_val(directive));
+  ZSTD_CCtx *const cctx = Zstd_cctx_val(context);
+  const int dir = Int_val(directive);
+
+  caml_enter_blocking_section();
+  const size_t remaining = ZSTD_compressStream2(cctx, &output, &input, dir);
+  caml_leave_blocking_section();
 
   if (ZSTD_isError(remaining))
-  {
     caml_failwith(ZSTD_getErrorName(remaining));
-  }
+
+  tup = caml_alloc_tuple(3);
+  initialize_compression_result_tuple(tup, remaining, input.pos, output.pos);
+
+  CAMLreturn(tup);
+}
+
+CAMLprim value caml_zstd_compress_stream2_bytes(value context, value in_slice, value out_slice, value directive)
+{
+  CAMLparam4(context, in_slice, out_slice, directive);
+  CAMLlocal1(tup);
+
+  ZSTD_inBuffer input = {
+      .src = Slice_bytes_val(in_slice),
+      .size = Slice_size_val(in_slice),
+      .pos = Slice_offset_val(in_slice)};
+
+  ZSTD_outBuffer output = {
+      .dst = Slice_bytes_val(out_slice),
+      .size = Slice_size_val(out_slice),
+      .pos = Slice_offset_val(out_slice)};
+
+  const size_t remaining = ZSTD_compressStream2(Zstd_cctx_val(context), &output, &input, Int_val(directive));
+
+  if (ZSTD_isError(remaining))
+    caml_failwith(ZSTD_getErrorName(remaining));
 
   tup = caml_alloc_tuple(3);
   initialize_compression_result_tuple(tup, remaining, input.pos, output.pos);

@@ -175,6 +175,14 @@ external compress_stream2 :
 (** [compress_stream2 context in_slice out_slice directive] feeds [in_slice]
     through the streaming compressor into [out_slice] with [directive]. *)
 
+external compress_stream2_bytes :
+  compression_context ->
+  Slice_bytes.t ->
+  Slice_bytes.t ->
+  int ->
+  int * int * int = "caml_zstd_compress_stream2_bytes"
+(** [compress_stream2_bytes context in_slice out_slice directive] *)
+
 external decompress_stream :
   decompression_stream -> Slice_bstr.t -> Slice_bstr.t -> int * int * int
   = "caml_zstd_decompress_stream"

@@ -106,7 +106,7 @@ module Stream = struct
 
   exception Already_closed
 
-  let compress ~in_slice ~out_slice stream directive =
+  let[@inline] compress_intf ~in_slice ~out_slice stream directive f =
     if stream.closed then raise Already_closed;
 
     let raw_directive =
@@ -118,8 +118,7 @@ module Stream = struct
 
     let remaining, consumed, compressed =
       Mutex.protect stream.context.mutex @@ fun () ->
-      Bindings.compress_stream2 stream.context.cctx in_slice out_slice
-        raw_directive
+      f stream.context.cctx in_slice out_slice raw_directive
     in
 
     begin match directive with
@@ -128,6 +127,14 @@ module Stream = struct
     end;
 
     (~remaining, ~consumed, ~compressed)
+
+  let compress ~in_slice ~out_slice stream directive =
+    compress_intf ~in_slice ~out_slice stream directive
+      Bindings.compress_stream2
+
+  let compress_bytes ~in_slice ~out_slice stream directive =
+    compress_intf ~in_slice ~out_slice stream directive
+      Bindings.compress_stream2_bytes
 
   let close stream =
     if stream.closed then raise Already_closed else stream.closed <- true

@@ -105,6 +105,7 @@ module Stream : sig
     out_slice:Slice_bytes.t ->
     t ->
     (remaining:int * consumed:int * decompressed:int)
+  (** [decompress_bytes ~in_slice ~out_slice stream] *)
 
   (** {2 Buffers sizes} *)
 
